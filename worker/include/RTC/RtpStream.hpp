@@ -14,7 +14,6 @@
 #include "RTC/RtpDataCounter.hpp"
 #include "RTC/RtpDictionaries.hpp"
 #include "RTC/RtpPacket.hpp"
-#include <map>
 #include <string>
 #include <vector>
 
@@ -112,12 +111,11 @@ namespace RTC
 		// Score related.
 		uint8_t score{ 0 };
 		std::vector<uint8_t> scores;
-		// Rapaired RTP packet map.
-		std::map<uint16_t, size_t> mapRepairedPackets;
 		// RTP stream data information for score calculation.
 		int32_t totalSourceLoss{ 0 };
 		int32_t totalReportedLoss{ 0 };
 		size_t totalSentPackets{ 0 };
+		size_t previousRepairedPackets{ 0 };
 		// Whether at least a RTP packet has been received.
 		bool started{ false };
 	}; // namespace RTC

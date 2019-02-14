@@ -13,8 +13,6 @@ namespace RTC
 	static constexpr uint16_t MaxDropout{ 3000 };
 	static constexpr uint16_t MaxMisorder{ 1500 };
 	static constexpr uint32_t RtpSeqMod{ 1 << 16 };
-	static constexpr size_t MaxRepairedPacketRetransmission{ 2 };
-	static constexpr size_t MaxRepairedPacketsLength{ 1000 };
 	static constexpr size_t ScoreHistogramLength{ 8 };
 
 	/* Instance methods. */
@@ -226,18 +224,9 @@ namespace RTC
 		else
 			currentLoss = reportedLoss - sourceLoss;
 
-		// Calculate repaired packets.
-		// TODO: This may have to be different in RtpStreamRecv and RtpStreamSend.
-		size_t repairedPacketCount{ 0 };
-
-		for (auto& kv : this->mapRepairedPackets)
-		{
-			if (kv.second <= MaxRepairedPacketRetransmission)
-				repairedPacketCount++;
-		}
-
-		// Reset repaired packets map.
-		this->mapRepairedPackets.clear();
+		// Calculate packets repaired in this interval.
+		size_t repairedPacketCount = this->packetsRepaired - this->previousRepairedPackets;
+		this->previousRepairedPackets = this->packetsRepaired;
 
 		// Calculate packets sent since last RR.
 		auto previousTotalSentPackets = this->totalSentPackets;
@@ -366,7 +355,6 @@ namespace RTC
 		this->totalSentPackets  = 0;
 
 		this->scores.clear();
-		this->mapRepairedPackets.clear();
 
 		if (this->score != 0)
 		{
@@ -384,16 +372,11 @@ namespace RTC
 		this->retransmissionCounter.Update(packet);
 	}
 
-	void RtpStream::PacketRepaired(RTC::RtpPacket* packet)
+	void RtpStream::PacketRepaired(RTC::RtpPacket* /*packet*/)
 	{
 		MS_TRACE();
 
 		this->packetsRepaired++;
-
-		if (this->mapRepairedPackets.size() == MaxRepairedPacketsLength)
-			this->mapRepairedPackets.erase(this->mapRepairedPackets.begin());
-
-		this->mapRepairedPackets[packet->GetSequenceNumber()]++;
 	}
 
 	void RtpStream::Params::FillJson(json& jsonObject) const
