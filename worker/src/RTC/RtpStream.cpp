@@ -225,7 +225,7 @@ namespace RTC
 			currentLoss = reportedLoss - sourceLoss;
 
 		// Calculate packets repaired in this interval.
-		size_t repairedPacketCount = this->packetsRepaired - this->previousRepairedPackets;
+		size_t repairedPacketCount    = this->packetsRepaired - this->previousRepairedPackets;
 		this->previousRepairedPackets = this->packetsRepaired;
 
 		// Calculate packets sent since last RR.
