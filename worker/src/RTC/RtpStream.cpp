@@ -377,11 +377,17 @@ namespace RTC
 		}
 	}
 
-	void RtpStream::PacketRepaired(RTC::RtpPacket* packet)
+	void RtpStream::PacketRetransmitted(RTC::RtpPacket* packet)
 	{
 		MS_TRACE();
 
 		this->retransmissionCounter.Update(packet);
+	}
+
+	void RtpStream::PacketRepaired(RTC::RtpPacket* packet)
+	{
+		MS_TRACE();
+
 		this->packetsRepaired++;
 
 		if (this->mapRepairedPackets.size() == MaxRepairedPacketsLength)

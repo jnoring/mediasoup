@@ -144,6 +144,8 @@ namespace RTC
 		// NACKed packet.
 		if (this->nackGenerator->ReceivePacket(packet))
 		{
+			// Mark the packet as retransmitted and repaired.
+			PacketRetransmitted(packet);
 			PacketRepaired(packet);
 
 			return true;

@@ -79,6 +79,7 @@ namespace RTC
 		bool UpdateSeq(RTC::RtpPacket* packet);
 		void UpdateScore(RTC::RTCP::ReceiverReport* report);
 		void ResetScore();
+		void PacketRetransmitted(RTC::RtpPacket* packet);
 		void PacketRepaired(RTC::RtpPacket* packet);
 
 	private:

@@ -90,7 +90,11 @@ namespace RTC
 				if (packet == nullptr)
 					break;
 
+				// Retransmit the packet.
 				RetransmitPacket(packet);
+
+				// Mark the packet as repaired.
+				PacketRepaired(packet);
 			}
 		}
 	}
@@ -241,8 +245,6 @@ namespace RTC
 			  rtxPacket->GetSequenceNumber());
 		}
 
-		PacketRepaired(packet);
-
 		// Send the packet.
 		static_cast<RTC::RtpStreamSend::Listener*>(this->listener)
 		  ->OnRtpStreamRetransmitRtpPacket(this, rtxPacket);
@@ -250,6 +252,9 @@ namespace RTC
 		// Delete the RTX RtpPacket if it was cloned.
 		if (rtxPacket != packet)
 			delete rtxPacket;
+
+		// Mark the packet as retransmitted.
+		PacketRetransmitted(packet);
 	}
 
 	void RtpStreamSend::StorePacket(RTC::RtpPacket* packet)
