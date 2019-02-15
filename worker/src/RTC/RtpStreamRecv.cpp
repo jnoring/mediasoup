@@ -212,16 +212,6 @@ namespace RTC
 
 			this->reportedPacketLost += (receivedInterval - newReceivedInterval);
 
-			// TODO: TMP.
-			MS_DEBUG_TAG(
-			  rtcp,
-			  "worst remote fraction lost is worse than local one [local packetsLost/fractionLost:%" PRIu32
-			  "/%" PRIu8 ", worst remote packetsLost/fractionLost:%" PRIu32 "/%" PRIu8 "]",
-			  this->packetsLost,
-			  this->fractionLost,
-			  this->reportedPacketLost,
-			  worstRemoteFractionLost);
-
 			report->SetTotalLost(this->reportedPacketLost);
 			report->SetFractionLost(worstRemoteFractionLost);
 		}
