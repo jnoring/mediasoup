@@ -1,5 +1,5 @@
 #define MS_CLASS "RTC::RtpStreamSend"
-#define MS_LOG_DEV
+// #define MS_LOG_DEV
 
 #include "RTC/RtpStreamSend.hpp"
 #include "DepLibUV.hpp"

@@ -198,45 +198,38 @@ namespace RTC
 		if (this->scores.size() == ScoreHistogramLength)
 			this->scores.erase(this->scores.begin());
 
-		this->scores.push_back(score);
-
-		// Compute new effective score taking into accout entries in the histogram.
 		auto previousScore = this->score;
 
-		if (!this->scores.empty())
+		// Compute new effective score taking into accout entries in the histogram.
+		this->scores.push_back(score);
+
+		/*
+		 * Scoring mechanism is a weighted average.
+		 *
+		 * The more recent the score is, the more weight it has.
+		 * The oldest score has a weight of 1 and subsequent scores weight is
+		 * increased by one sequentially.
+		 *
+		 * Ie:
+		 * - scores: [1,2,3,4]
+		 * - this->scores = ((1) + (2+2) + (3+3+3) + (4+4+4+4)) / 10 = 2.8 => 3
+		 */
+
+		size_t weight{ 0 };
+		size_t samples{ 0 };
+		size_t totalScore{ 0 };
+
+		for (auto score : this->scores)
 		{
-			/*
-			 * Scoring mechanism is a weighted average.
-			 *
-			 * The more recent the score is, the more weight it has.
-			 * The oldest score has a weight of 1 and subsequent scores weight is
-			 * increased by one sequentially.
-			 *
-			 * Ie:
-			 * - scores: [1,2,3,4]
-			 * - this->scores = ((1) + (2+2) + (3+3+3) + (4+4+4+4)) / 10 = 2.8 => 3
-			 */
-
-			size_t weight{ 0 };
-			size_t samples{ 0 };
-			size_t totalScore{ 0 };
-
-			for (auto score : this->scores)
-			{
-				weight++;
-				samples += weight;
-				totalScore += weight * score;
-			}
-
-			// clang-tidy "thinks" that this can lead to division by zero but we are
-			// smarter.
-			// NOLINTNEXTLINE(clang-analyzer-core.DivideZero)
-			this->score = static_cast<uint8_t>(std::round(totalScore / samples));
+			weight++;
+			samples += weight;
+			totalScore += weight * score;
 		}
-		else
-		{
-			this->score = 0;
-		}
+
+		// clang-tidy "thinks" that this can lead to division by zero but we are
+		// smarter.
+		// NOLINTNEXTLINE(clang-analyzer-core.DivideZero)
+		this->score = static_cast<uint8_t>(std::round(totalScore / samples));
 
 		// Call the listener if the global score has changed.
 		if (this->score != previousScore)
