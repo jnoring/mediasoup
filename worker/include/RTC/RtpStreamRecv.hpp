@@ -37,6 +37,7 @@ namespace RTC
 
 	private:
 		void CalculateJitter(uint32_t rtpTimestamp);
+		void UpdateScore();
 
 		/* Pure virtual methods inherited from Timer. */
 	protected:
@@ -48,8 +49,7 @@ namespace RTC
 		void OnNackGeneratorKeyFrameRequired() override;
 
 	private:
-		uint32_t expectedPrior{ 0 };   // Packet expected at last interval.
-		uint32_t receivedPrior{ 0 };   // Packet received at last interval.
+		uint32_t receivedPrior{ 0 };   // Packets received at last interval.
 		uint32_t lastSrTimestamp{ 0 }; // The middle 32 bits out of 64 in the NTP
 		                               // timestamp received in the most recent
 		                               // sender report.

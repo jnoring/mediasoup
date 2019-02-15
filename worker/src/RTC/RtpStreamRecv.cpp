@@ -177,7 +177,7 @@ namespace RTC
 		uint32_t prevPacketsLost = this->packetsLost;
 
 		// Calculate Packets Expected and Lost.
-		uint32_t expected = (this->cycles + this->maxSeq) - this->baseSeq + 1;
+		auto expected     = this->GetExpectedPackets();
 		this->packetsLost = expected - this->transmissionCounter.GetPacketCount();
 
 		// Calculate Fraction Lost.
@@ -249,7 +249,7 @@ namespace RTC
 		this->lastSrTimestamp += report->GetNtpFrac() >> 16;
 
 		// Update the score with the current RR.
-		UpdateScore(GetRtcpReceiverReport());
+		UpdateScore();
 	}
 
 	void RtpStreamRecv::RequestKeyFrame()
@@ -410,5 +410,69 @@ namespace RTC
 		MS_DEBUG_TAG(rtx, "requesting key frame [ssrc:%" PRIu32 "]", this->params.ssrc);
 
 		RequestKeyFrame();
+	}
+
+	void RtpStreamRecv::UpdateScore()
+	{
+		MS_TRACE();
+
+		// Calculate number of packets expected in this interval.
+		auto totalExpected = this->GetExpectedPackets();
+		uint32_t expected  = totalExpected - this->expectedPrior;
+
+		// We didn't expect more packets to come.
+		if (expected == 0)
+			return;
+
+		this->expectedPrior = totalExpected;
+
+		// Calculate number of packets received in this interval.
+		auto totalReceived  = this->transmissionCounter.GetPacketCount();
+		uint32_t received   = totalReceived - this->receivedPrior;
+		this->receivedPrior = totalReceived;
+
+		// Calculate number of packets lost in this interval.
+		uint32_t lost = expected - received;
+
+		// Calculate number of packets repaired in this interval.
+		auto totalRepaired  = this->packetsRepaired;
+		uint32_t repaired   = totalRepaired - this->repairedPrior;
+		this->repairedPrior = totalRepaired;
+
+		if (repaired >= lost)
+			lost = 0;
+		else
+			lost -= repaired;
+
+		// Calculate packet loss percentage in this interva.
+		float lossPercentage = lost * 100 / expected;
+
+		/*
+		 * Calculate score. Starting from a score of 100:
+		 *
+		 * - Each loss porcentual point has a weight of 1.0f.
+		 */
+		float base100Score{ 100 };
+		base100Score -= (lossPercentage * 1.0f);
+
+		// Get base 10 score.
+		auto score = static_cast<uint8_t>(std::lround(base100Score / 10));
+
+#ifdef MS_LOG_DEV
+		MS_DEBUG_TAG(
+		  score,
+		  "[totalExpected:%" PRIu32 ", totalReceived:%zu, totalRepaired:%zu, expected:%" PRIu32
+		  ", received:%" PRIu32 ", repaired:%" PRIu32 ", lossPercentage:%f, score:%" PRIu8 "]",
+		  totalExpected,
+		  totalReceived,
+		  totalRepaired,
+		  expected,
+		  received,
+		  repaired,
+		  lossPercentage,
+		  score);
+#endif
+
+		RtpStream::UpdateScore(score);
 	}
 } // namespace RTC

@@ -1,5 +1,5 @@
 #define MS_CLASS "RTC::RtpStreamSend"
-// #define MS_LOG_DEV
+#define MS_LOG_DEV
 
 #include "RTC/RtpStreamSend.hpp"
 #include "DepLibUV.hpp"
@@ -521,5 +521,84 @@ namespace RTC
 
 		// Set the next container element to null.
 		RetransmissionContainer[containerIdx] = nullptr;
+	}
+
+	void RtpStreamSend::UpdateScore(RTC::RTCP::ReceiverReport* report)
+	{
+		MS_TRACE();
+
+		// Calculate number of packets lost in the source in this interval.
+		auto totalExpected = this->GetExpectedPackets();
+		auto expected      = totalExpected - this->expectedPrior;
+
+		// We didn't send new packets.
+		if (expected == 0)
+			return;
+
+		this->expectedPrior = totalExpected;
+
+		auto totalSent        = this->transmissionCounter.GetPacketCount();
+		auto totalSourceLost  = totalExpected - totalSent;
+		auto sourceLost       = totalSourceLost - this->sourceLostPrior;
+		this->sourceLostPrior = totalSourceLost;
+
+		// Calculate number of packets lost in the edge in this interval.
+		auto totalLost  = report->GetTotalLost();
+		auto lost       = totalLost - this->lostPrior;
+		this->lostPrior = totalLost;
+
+		// Substract number of packets lost at the source.
+		lost -= sourceLost;
+
+		// Calculate number of packets repaired in this interval.
+		auto totalRepaired  = this->packetsRepaired;
+		uint32_t repaired   = totalRepaired - this->repairedPrior;
+		this->repairedPrior = totalRepaired;
+
+		if (repaired >= lost)
+			lost = 0;
+		else
+			lost -= repaired;
+
+		if (repaired > lost)
+		{
+			MS_DEBUG_TAG(
+			  score, "repaired greater than los: repaired:%" PRIu32 ", lost:%" PRIu32, repaired, lost);
+		}
+
+		// Calculate packet loss percentage in this interva.
+		float lossPercentage = lost * 100 / expected;
+
+		/*
+		 * Calculate score. Starting from a score of 100:
+		 *
+		 * - Each loss porcentual point has a weight of 1.0f.
+		 */
+		float base100Score{ 100 };
+		base100Score -= (lossPercentage * 1.0f);
+
+		// Get base 10 score.
+		auto score = static_cast<uint8_t>(std::lround(base100Score / 10));
+
+#ifdef MS_LOG_DEV
+		MS_DEBUG_TAG(
+		  score,
+		  "[totalExpected:%" PRIu32 ", totalSent:%zu, totalSourceLost:%zu, totalLost:%" PRIi32
+		  ", totalRepaired:%zu, expected:%" PRIu32 ", repaired:%" PRIu32
+		  ", lossPercentage:%f, score:%" PRIu8 "]",
+		  totalExpected,
+		  totalSent,
+		  totalSourceLost,
+		  totalLost,
+		  totalRepaired,
+		  expected,
+		  repaired,
+		  lossPercentage,
+		  score);
+
+		report->Dump();
+#endif
+
+		RtpStream::UpdateScore(score);
 	}
 } // namespace RTC

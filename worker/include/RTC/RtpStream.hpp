@@ -76,10 +76,11 @@ namespace RTC
 
 	protected:
 		bool UpdateSeq(RTC::RtpPacket* packet);
-		void UpdateScore(RTC::RTCP::ReceiverReport* report);
+		void UpdateScore(uint8_t score);
 		void ResetScore();
 		void PacketRetransmitted(RTC::RtpPacket* packet);
 		void PacketRepaired(RTC::RtpPacket* packet);
+		uint32_t GetExpectedPackets();
 
 	private:
 		void InitSeq(uint16_t seq);
@@ -104,6 +105,8 @@ namespace RTC
 		size_t nackRtpPacketCount{ 0 };
 		size_t pliCount{ 0 };
 		size_t firCount{ 0 };
+		size_t repairedPrior{ 0 };   // Packets repaired at last interval.
+		uint32_t expectedPrior{ 0 }; // Packets expected at last interval.
 		RTC::RtpDataCounter transmissionCounter;
 		RTC::RtpDataCounter retransmissionCounter;
 
@@ -115,7 +118,6 @@ namespace RTC
 		int32_t totalSourceLoss{ 0 };
 		int32_t totalReportedLoss{ 0 };
 		size_t totalSentPackets{ 0 };
-		size_t previousRepairedPackets{ 0 };
 		// Whether at least a RTP packet has been received.
 		bool started{ false };
 	}; // namespace RTC
@@ -191,6 +193,11 @@ namespace RTC
 	inline uint64_t RtpStream::GetMaxPacketMs() const
 	{
 		return this->maxPacketMs;
+	}
+
+	inline uint32_t RtpStream::GetExpectedPackets()
+	{
+		return (this->cycles + this->maxSeq) - this->baseSeq + 1;
 	}
 
 	inline uint8_t RtpStream::GetScore() const

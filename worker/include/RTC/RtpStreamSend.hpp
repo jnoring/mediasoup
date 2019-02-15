@@ -53,8 +53,11 @@ namespace RTC
 		void StorePacket(RTC::RtpPacket* packet);
 		void ClearRetransmissionBuffer();
 		void FillRetransmissionContainer(uint16_t seq, uint16_t bitmask);
+		void UpdateScore(RTC::RTCP::ReceiverReport* report);
 
 	private:
+		uint32_t sourceLostPrior{ 0 }; // Packets lost in source at last interval.
+		uint32_t lostPrior{ 0 };       // Packets lost at last interval.
 		std::vector<StorageItem> storage;
 		std::list<BufferItem> buffer;
 		float rtt{ 0 };

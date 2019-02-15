@@ -190,97 +190,9 @@ namespace RTC
 		return true;
 	}
 
-	void RtpStream::UpdateScore(RTC::RTCP::ReceiverReport* report)
+	void RtpStream::UpdateScore(uint8_t score)
 	{
 		MS_TRACE();
-
-		// Calculate packet loss reported since last RR.
-		auto previousTotalReportedLoss = this->totalReportedLoss;
-
-		this->totalReportedLoss = report->GetTotalLost();
-
-		auto reportedLoss = this->totalReportedLoss - previousTotalReportedLoss;
-
-		if (reportedLoss < 0)
-			reportedLoss = 0;
-
-		// Calculate source packet loss since last RR.
-		auto previousTotalSourceLoss = this->totalSourceLoss;
-		auto expectedPackets         = uint64_t{ this->cycles + this->maxSeq - this->baseSeq + 1 };
-
-		this->totalSourceLoss =
-		  static_cast<int32_t>(expectedPackets - this->transmissionCounter.GetPacketCount());
-
-		auto sourceLoss = this->totalSourceLoss - previousTotalSourceLoss;
-
-		if (sourceLoss < 0)
-			sourceLoss = 0;
-
-		// Calculate effective loss since last report.
-		size_t currentLoss;
-
-		if (reportedLoss < sourceLoss)
-			currentLoss = 0;
-		else
-			currentLoss = reportedLoss - sourceLoss;
-
-		// Calculate packets repaired in this interval.
-		size_t repairedPacketCount    = this->packetsRepaired - this->previousRepairedPackets;
-		this->previousRepairedPackets = this->packetsRepaired;
-
-		// Calculate packets sent since last RR.
-		auto previousTotalSentPackets = this->totalSentPackets;
-
-		this->totalSentPackets = this->transmissionCounter.GetPacketCount();
-
-		auto sentPackets = this->totalSentPackets - previousTotalSentPackets;
-
-		// Nothing to do.
-		if (sentPackets == 0)
-			return;
-
-		// There cannot be more loss than sent packets.
-		if (currentLoss > sentPackets)
-			currentLoss = sentPackets;
-
-		// There cannot be more repaired than sent packets.
-		if (repairedPacketCount > sentPackets)
-			repairedPacketCount = sentPackets;
-
-		float lossPercentage     = currentLoss * 100 / sentPackets;
-		float repairedPercentage = repairedPacketCount * 100 / sentPackets;
-
-		/*
-		 * Calculate score. Starting from a score of 100:
-		 *
-		 * - Each loss porcentual point has a weight of LossPercentageWeight.
-		 * - Each repaired porcentual point has a  weight of RepairedPercentageWeight.
-		 */
-
-		float base100Score{ 100 };
-
-		base100Score -= lossPercentage * 1.0f;
-		base100Score += repairedPercentage * 0.5f;
-
-		// Get base 10 score.
-		auto score = static_cast<uint8_t>(std::lround(base100Score / 10));
-
-#ifdef MS_LOG_DEV
-		MS_DEBUG_TAG(
-		  rtp,
-		  "[sentPackets:%zu, currentLoss:%zu, totalSourceLoss:%" PRIi32 ", totalReportedLoss:%" PRIi32
-		  ", repairedPacketCount:%zu, lossPercentage:%f, repairedPercentage:%f, score:%" PRIu8 "]",
-		  sentPackets,
-		  currentLoss,
-		  this->totalSourceLoss,
-		  this->totalReportedLoss,
-		  repairedPacketCount,
-		  lossPercentage,
-		  repairedPercentage,
-		  score);
-
-		report->Dump();
-#endif
 
 		// Add the score into the histogram.
 		if (this->scores.size() == ScoreHistogramLength)
@@ -342,7 +254,12 @@ namespace RTC
 		else
 		{
 			MS_DEBUG_TAG(
-			  score, "[added score:%" PRIu8 ", computed score:%" PRIu8 "] (no change)", score, this->score);
+			  score,
+			  "[added score:%" PRIu8 ", previous computed score:%" PRIu8 ", new computed score:%" PRIu8
+			  "] (no change)",
+			  score,
+			  previousScore,
+			  this->score);
 		}
 	}
 
