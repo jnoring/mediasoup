@@ -337,7 +337,11 @@ namespace RTC
 
 			// If no RTP is being received reset the score.
 			if (this->transmissionCounter.GetRate(now) == 0)
+			{
+				MS_WARN_2TAGS(rtp, score, "RTP inactivity detected, resetting score to 0");
+
 				ResetScore();
+			}
 		}
 	}
 
@@ -427,16 +431,18 @@ namespace RTC
 		this->expectedPrior = totalExpected;
 
 		// Calculate number of packets received in this interval.
-		auto totalReceived  = this->transmissionCounter.GetPacketCount();
-		uint32_t received   = totalReceived - this->receivedPrior;
+		auto totalReceived = this->transmissionCounter.GetPacketCount();
+		uint32_t received  = totalReceived - this->receivedPrior;
+
 		this->receivedPrior = totalReceived;
 
 		// Calculate number of packets lost in this interval.
 		uint32_t lost = expected - received;
 
 		// Calculate number of packets repaired in this interval.
-		auto totalRepaired  = this->packetsRepaired;
-		uint32_t repaired   = totalRepaired - this->repairedPrior;
+		auto totalRepaired = this->packetsRepaired;
+		uint32_t repaired  = totalRepaired - this->repairedPrior;
+
 		this->repairedPrior = totalRepaired;
 
 		if (repaired >= lost)
@@ -453,6 +459,7 @@ namespace RTC
 		 * - Each loss porcentual point has a weight of 1.0f.
 		 */
 		float base100Score{ 100 };
+
 		base100Score -= (lossPercentage * 1.0f);
 
 		// Get base 10 score.

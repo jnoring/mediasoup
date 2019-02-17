@@ -246,6 +246,7 @@ namespace RTC
 		}
 		else
 		{
+#ifdef MS_LOG_DEV
 			MS_DEBUG_TAG(
 			  score,
 			  "[added score:%" PRIu8 ", previous computed score:%" PRIu8 ", new computed score:%" PRIu8
@@ -253,6 +254,7 @@ namespace RTC
 			  score,
 			  previousScore,
 			  this->score);
+#endif
 		}
 	}
 

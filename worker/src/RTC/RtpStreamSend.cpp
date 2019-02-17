@@ -537,22 +537,25 @@ namespace RTC
 
 		this->expectedPrior = totalExpected;
 
-		auto totalSent        = this->transmissionCounter.GetPacketCount();
-		auto totalSourceLost  = totalExpected - totalSent;
-		auto sourceLost       = totalSourceLost - this->sourceLostPrior;
+		auto totalSent       = this->transmissionCounter.GetPacketCount();
+		auto totalSourceLost = totalExpected - totalSent;
+		auto sourceLost      = totalSourceLost - this->sourceLostPrior;
+
 		this->sourceLostPrior = totalSourceLost;
 
 		// Calculate number of packets lost in the edge in this interval.
-		auto totalLost  = report->GetTotalLost();
-		auto lost       = totalLost - this->lostPrior;
+		auto totalLost = report->GetTotalLost();
+		auto lost      = totalLost - this->lostPrior;
+
 		this->lostPrior = totalLost;
 
 		// Substract number of packets lost at the source.
 		lost -= sourceLost;
 
 		// Calculate number of packets repaired in this interval.
-		auto totalRepaired  = this->packetsRepaired;
-		uint32_t repaired   = totalRepaired - this->repairedPrior;
+		auto totalRepaired = this->packetsRepaired;
+		uint32_t repaired  = totalRepaired - this->repairedPrior;
+
 		this->repairedPrior = totalRepaired;
 
 		if (repaired >= lost)
@@ -563,7 +566,7 @@ namespace RTC
 		if (repaired > lost)
 		{
 			MS_DEBUG_TAG(
-			  score, "repaired greater than los: repaired:%" PRIu32 ", lost:%" PRIu32, repaired, lost);
+			  score, "repaired greater than lost [repaired:%" PRIu32 ", lost:%" PRIu32 "]", repaired, lost);
 		}
 
 		// Calculate packet loss percentage in this interva.
@@ -575,6 +578,7 @@ namespace RTC
 		 * - Each loss porcentual point has a weight of 1.0f.
 		 */
 		float base100Score{ 100 };
+
 		base100Score -= (lossPercentage * 1.0f);
 
 		// Get base 10 score.
