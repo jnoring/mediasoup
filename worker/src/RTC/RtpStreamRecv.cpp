@@ -69,6 +69,10 @@ namespace RTC
 		if (this->params.useNack)
 			this->nackGenerator->ReceivePacket(packet);
 
+		// Ensure the inactivityCheckPeriodicTimer runs.
+		if (!this->inactivityCheckPeriodicTimer->IsActive())
+			this->inactivityCheckPeriodicTimer->Restart();
+
 		return true;
 	}
 
@@ -338,7 +342,10 @@ namespace RTC
 			// If no RTP is being received reset the score.
 			if (this->transmissionCounter.GetRate(now) == 0)
 			{
-				MS_WARN_2TAGS(rtp, score, "RTP inactivity detected, resetting score to 0");
+				this->inactivityCheckPeriodicTimer->Stop();
+
+				if (GetScore() != 0)
+					MS_WARN_2TAGS(rtp, score, "RTP inactivity detected, resetting score to 0");
 
 				ResetScore();
 			}
