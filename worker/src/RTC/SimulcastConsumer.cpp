@@ -34,6 +34,18 @@ namespace RTC
 		else
 			this->maxRtcpInterval = RTC::RTCP::MaxVideoIntervalMs;
 
+		// Fill mapMappedSsrcSpatialLayer.
+		for (size_t idx{ 0 }; idx < this->consumableRtpEncodings.size(); ++idx)
+		{
+			auto& encoding = this->consumableRtpEncodings[idx];
+
+			this->mapMappedSsrcSpatialLayer[encoding.ssrc] = static_cast<int16_t>(idx);
+		}
+
+		// Reserve space for the Producer RTP streams.
+		this->producerRtpStreams.insert(
+		  this->producerRtpStreams.begin(), this->consumableRtpEncodings.size(), nullptr);
+
 		// Initially set preferreSpatialLayer to the maximum value.
 		this->preferredSpatialLayer = static_cast<int16_t>(this->consumableRtpEncodings.size()) - 1;
 
