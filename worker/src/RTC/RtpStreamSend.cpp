@@ -129,6 +129,7 @@ namespace RTC
 
 		// Get the compact NTP representation of the current timestamp.
 		uint32_t compactNtp = (ntp.seconds & 0x0000FFFF) << 16;
+
 		compactNtp |= (ntp.fractions & 0xFFFF0000) >> 16;
 
 		uint32_t lastSr = report->GetLastSenderReport();
@@ -470,6 +471,7 @@ namespace RTC
 						(*bufferIt).resentAtTime = now;
 
 						sent = true;
+
 						if (isFirstPacket)
 							firstPacketSent = true;
 
