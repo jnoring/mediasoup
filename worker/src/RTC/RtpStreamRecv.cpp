@@ -338,7 +338,7 @@ namespace RTC
 		MS_TRACE();
 
 		// Calculate number of packets expected in this interval.
-		auto totalExpected = this->GetExpectedPackets();
+		auto totalExpected = GetExpectedPackets();
 		uint32_t expected  = totalExpected - this->expectedPrior;
 
 		// We didn't expect more packets to come.

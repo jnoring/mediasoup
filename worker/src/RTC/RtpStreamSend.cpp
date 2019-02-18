@@ -530,7 +530,7 @@ namespace RTC
 		MS_TRACE();
 
 		// Calculate number of packets lost in the source in this interval.
-		auto totalExpected = this->GetExpectedPackets();
+		auto totalExpected = GetExpectedPackets();
 		auto expected      = totalExpected - this->expectedPrior;
 
 		// We didn't send new packets.
