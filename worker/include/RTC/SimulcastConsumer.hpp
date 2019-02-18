@@ -40,11 +40,8 @@ namespace RTC
 		void RequestKeyFrame();
 		void RetransmitRtpPacket(RTC::RtpPacket* packet);
 		void EmitScore() const;
+		void SetCurrentSpatialLayer(int16_t spatialLayer);
 		void RecalculateTargetSpatialLayer(bool force = false);
-		bool IsProbing() const;
-		void StartProbation(int16_t spatialLayer);
-		void StopProbation();
-		void SendProbationPacket(RTC::RtpPacket* packet);
 
 		/* Pure virtual methods inherited from RtpStreamSend::Listener. */
 	public:
@@ -68,9 +65,6 @@ namespace RTC
 		int16_t preferredSpatialLayer{ -1 };
 		int16_t targetSpatialLayer{ -1 };
 		int16_t currentSpatialLayer{ -1 };
-		int16_t probationSpatialLayer{ -1 };
-		uint16_t packetsBeforeProbation{ 0 };
-		uint16_t probationPackets{ 0 };
 	};
 } // namespace RTC
 

@@ -134,15 +134,12 @@ namespace RTC
 			return;
 		}
 
-		bool isKeyFrame = false;
+		// If we are waiting for a key frame and this is not one, ignore the packet.
+		if (this->syncRequired && this->keyFrameSupported && !packet->IsKeyFrame())
+			return;
 
 		// Just check if the packet contains a key frame when we need to sync.
-		if (this->syncRequired && packet->IsKeyFrame())
-			isKeyFrame = true;
-
-		// If we are waiting for a key frame and this is not one, ignore the packet.
-		if (this->syncRequired && this->keyFrameSupported && !isKeyFrame)
-			return;
+		bool isSyncKeyFrame = this->syncRequired && packet->IsKeyFrame();
 
 		// Whether this is the first packet after re-sync.
 		bool isSyncPacket = this->syncRequired;
@@ -150,8 +147,8 @@ namespace RTC
 		// Sync sequence number and timestamp if required.
 		if (isSyncPacket)
 		{
-			if (isKeyFrame)
-				MS_DEBUG_TAG(rtp, "awaited key frame received");
+			if (isSyncKeyFrame)
+				MS_DEBUG_TAG(rtp, "sync key frame received");
 
 			this->rtpSeqManager.Sync(packet->GetSequenceNumber());
 			this->rtpTimestampManager.Sync(packet->GetTimestamp());

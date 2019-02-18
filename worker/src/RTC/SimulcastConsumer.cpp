@@ -9,18 +9,11 @@
 
 namespace RTC
 {
-	/* Static. */
-
-	static constexpr uint16_t PacketsBeforeProbation{ 2000 };
-	// Must be a power of 2.
-	static constexpr uint16_t ProbationPacketNumber{ 256 };
-
 	/* Instance methods. */
 
 	SimulcastConsumer::SimulcastConsumer(
 	  const std::string& id, RTC::Consumer::Listener* listener, json& data)
-	  : RTC::Consumer::Consumer(id, listener, data, RTC::RtpParameters::Type::SIMULCAST),
-	    packetsBeforeProbation(PacketsBeforeProbation)
+	  : RTC::Consumer::Consumer(id, listener, data, RTC::RtpParameters::Type::SIMULCAST)
 	{
 		MS_TRACE();
 
@@ -109,7 +102,35 @@ namespace RTC
 
 			case Channel::Request::MethodId::CONSUMER_SET_PREFERRED_LAYERS:
 			{
-				// TODO
+				auto jsonSpatialLayerIt = request->data.find("spatialLayer");
+
+				if (jsonSpatialLayerIt == request->data.end() || !jsonSpatialLayerIt->is_number_unsigned())
+				{
+					MS_THROW_TYPE_ERROR("missing spatialLayer");
+				}
+
+				auto preferredSpatialLayer = jsonSpatialLayerIt->get<int16_t>();
+
+				if (preferredSpatialLayer >= static_cast<int16_t>(this->mapMappedSsrcSpatialLayer.size()))
+				{
+					preferredSpatialLayer = static_cast<int16_t>(this->mapMappedSsrcSpatialLayer.size()) - 1;
+				}
+
+				if (preferredSpatialLayer == this->preferredSpatialLayer)
+				{
+					request->Accept();
+
+					return;
+				}
+
+				this->preferredSpatialLayer = preferredSpatialLayer;
+
+				MS_DEBUG_DEV(
+				  "preferredSpatialLayer changed to %" PRIi16 " [consumerId:%s]",
+				  this->preferredSpatialLayer,
+				  this->id.c_str());
+
+				RecalculateTargetSpatialLayer(true /*force*/);
 
 				request->Accept();
 
@@ -181,14 +202,33 @@ namespace RTC
 			return;
 		}
 
-		bool isKeyFrame = false;
-
-		// Just check if the packet contains a key frame when we need to sync.
-		if (this->syncRequired && packet->IsKeyFrame())
-			isKeyFrame = true;
-
 		// If we are waiting for a key frame and this is not one, ignore the packet.
-		if (this->syncRequired && this->keyFrameSupported && !isKeyFrame)
+		if (this->syncRequired && this->keyFrameSupported && !packet->IsKeyFrame())
+			return;
+
+		auto spatialLayer = this->mapMappedSsrcSpatialLayer.at(packet->GetSsrc());
+
+		// Check whether this is the key frame we are waiting for in order to update
+		// the current spatial layer.
+		if (this->currentSpatialLayer != this->targetSpatialLayer && spatialLayer == this->targetSpatialLayer)
+		{
+			// Just check if the packet contains a key frame when we need to sync.
+			bool isSyncKeyFrame = this->syncRequired && packet->IsKeyFrame();
+
+			if (isSyncKeyFrame || !this->keyFrameSupported)
+			{
+				if (isSyncKeyFrame)
+				{
+					MS_DEBUG_TAG(rtp, "sync key frame received for target spatial layer %" PRIi16, spatialLayer);
+				}
+
+				SetCurrentSpatialLayer(this->targetSpatialLayer);
+			}
+		}
+
+		// If the packet belongs to different spatial layer than the one being sent,
+		// drop it.
+		if (spatialLayer != this->currentSpatialLayer)
 			return;
 
 		// Whether this is the first packet after re-sync.
@@ -197,9 +237,6 @@ namespace RTC
 		// Sync sequence number and timestamp if required.
 		if (isSyncPacket)
 		{
-			if (isKeyFrame)
-				MS_DEBUG_TAG(rtp, "awaited key frame received");
-
 			this->rtpSeqManager.Sync(packet->GetSequenceNumber());
 			this->rtpTimestampManager.Sync(packet->GetTimestamp());
 
@@ -219,6 +256,9 @@ namespace RTC
 			this->syncRequired = false;
 		}
 
+		// TODO: Not sure how to deal with it, but if this happens (and we drop the packet)
+		// we shouldn't have unset the syncRequired flag, etc.
+		//
 		// Rewrite payload if needed. Drop packet if necessary.
 		if (this->encodingContext && !packet->EncodePayload(this->encodingContext.get()))
 		{
@@ -263,10 +303,6 @@ namespace RTC
 		{
 			// Send the packet.
 			this->listener->OnConsumerSendRtpPacket(this, packet);
-
-			// Retransmit the RTP packet if probing.
-			if (IsProbing())
-				SendProbationPacket(packet);
 		}
 		else
 		{
@@ -405,11 +441,6 @@ namespace RTC
 		MS_TRACE();
 
 		this->rtpStream->Pause();
-
-		this->packetsBeforeProbation = PacketsBeforeProbation;
-
-		if (IsProbing())
-			StopProbation();
 	}
 
 	void SimulcastConsumer::Resumed(bool wasProducer)
@@ -521,9 +552,34 @@ namespace RTC
 		Channel::Notifier::Emit(this->id, "score", data);
 	}
 
+	void SimulcastConsumer::SetCurrentSpatialLayer(int16_t spatialLayer)
+	{
+		MS_TRACE();
+
+		this->currentSpatialLayer = spatialLayer;
+
+		MS_DEBUG_DEV(
+		  "currentSpatialLayer changed to %" PRIi16 " [consumerId:%s]",
+		  this->currentSpatialLayer,
+		  this->id.c_str());
+
+		if (!IsActive())
+			return;
+
+		json data(json::object());
+
+		data["spatialLayer"] = this->currentSpatialLayer;
+
+		Channel::Notifier::Emit(this->id, "layerschange", data);
+	}
+
 	void SimulcastConsumer::RecalculateTargetSpatialLayer(bool /*force*/)
 	{
 		MS_TRACE();
+
+		// TODO: Must set this here somewhere.
+		// Resynchronize the stream.
+		this->syncRequired = true;
 
 		// RTC::RtpEncodingParameters::Profile newTargetProfile;
 		// auto probatedProfile = RTC::RtpEncodingParameters::Profile::NONE;
@@ -667,62 +723,6 @@ namespace RTC
 		//   rtp,
 		//   "target profile set [profile:%s]",
 		//   RTC::RtpEncodingParameters::profile2String[this->targetProfile].c_str());
-	}
-
-	inline bool SimulcastConsumer::IsProbing() const
-	{
-		MS_TRACE();
-
-		return this->probationPackets != 0;
-	}
-
-	void SimulcastConsumer::StartProbation(int16_t spatialLayer)
-	{
-		MS_TRACE();
-
-		this->probationPackets      = ProbationPacketNumber;
-		this->probationSpatialLayer = spatialLayer;
-	}
-
-	void SimulcastConsumer::StopProbation()
-	{
-		MS_TRACE();
-
-		this->probationPackets      = 0;
-		this->probationSpatialLayer = -1;
-	}
-
-	void SimulcastConsumer::SendProbationPacket(RTC::RtpPacket* packet)
-	{
-		MS_TRACE();
-
-		if (!IsProbing())
-			return;
-
-		this->rtpStream->RetransmitPacket(packet);
-
-		switch (this->currentSpatialLayer)
-		{
-			case -1:
-				MS_ABORT("cannot send probation packet without any current spatial layer");
-				break;
-
-			case 0:
-				this->probationPackets -= 4;
-				break;
-
-			case 1:
-				this->probationPackets -= 2;
-				break;
-
-			// 2 and bigger.
-			default:
-				this->probationPackets--;
-				break;
-		}
-
-		if (this->probationPackets == 0)
-			RecalculateTargetSpatialLayer();
 	}
 
 	inline void SimulcastConsumer::OnRtpStreamScore(RTC::RtpStream* /*rtpStream*/, uint8_t /*score*/)
