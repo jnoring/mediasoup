@@ -209,8 +209,6 @@ namespace RTC
 				break;
 			}
 
-				// TODO: Much more.
-
 			default:
 			{
 				MS_THROW_ERROR("unknown method '%s'", request->method.c_str());

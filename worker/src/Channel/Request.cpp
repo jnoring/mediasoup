@@ -19,6 +19,7 @@ namespace Channel
 		{ "router.dump",                     Request::MethodId::ROUTER_DUMP                        },
 		{ "router.createWebRtcTransport",    Request::MethodId::ROUTER_CREATE_WEBRTC_TRANSPORT     },
 		{ "router.createPlainRtpTransport",  Request::MethodId::ROUTER_CREATE_PLAIN_RTP_TRANSPORT  },
+		{ "router.createAudioLevelObserver", Request::MethodId::ROUTER_CREATE_AUDIO_LEVEL_OBSERVER },
 		{ "transport.close",                 Request::MethodId::TRANSPORT_CLOSE                    },
 		{ "transport.dump",                  Request::MethodId::TRANSPORT_DUMP                     },
 		{ "transport.getStats",              Request::MethodId::TRANSPORT_GET_STATS                },
@@ -40,6 +41,8 @@ namespace Channel
 		{ "consumer.setPreferredLayers",     Request::MethodId::CONSUMER_SET_PREFERRED_LAYERS      },
 		{ "consumer.requestKeyFrame",        Request::MethodId::CONSUMER_REQUEST_KEY_FRAME         },
 		{ "rtpObserver.close",               Request::MethodId::RTP_OBSERVER_CLOSE                 },
+		{ "rtpObserver.pause",               Request::MethodId::RTP_OBSERVER_PAUSE                 },
+		{ "rtpObserver.resume",              Request::MethodId::RTP_OBSERVER_RESUME                },
 		{ "rtpObserver.addProducer",         Request::MethodId::RTP_OBSERVER_ADD_PRODUCER          },
 		{ "rtpObserver.removeProducer",      Request::MethodId::RTP_OBSERVER_REMOVE_PRODUCER       }
 	};

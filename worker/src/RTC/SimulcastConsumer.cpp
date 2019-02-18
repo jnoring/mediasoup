@@ -577,7 +577,7 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		// TODO: Must set this here somewhere.
+		// TODO: Must set this here somewhere below.
 		// Resynchronize the stream.
 		this->syncRequired = true;
 

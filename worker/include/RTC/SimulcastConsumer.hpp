@@ -8,7 +8,7 @@
 
 namespace RTC
 {
-	class SimulcastConsumer : public Consumer, public RTC::RtpStreamSend::Listener
+	class SimulcastConsumer : public RTC::Consumer, public RTC::RtpStreamSend::Listener
 	{
 	public:
 		SimulcastConsumer(const std::string& id, RTC::Consumer::Listener* listener, json& data);
@@ -31,11 +31,9 @@ namespace RTC
 		float GetLossPercentage() const override;
 		json GetScore() const override;
 
-	protected:
+	private:
 		void Paused(bool wasProducer) override;
 		void Resumed(bool wasProducer) override;
-
-	private:
 		void CreateRtpStream();
 		void RequestKeyFrame();
 		void RetransmitRtpPacket(RTC::RtpPacket* packet);

@@ -8,7 +8,7 @@
 
 namespace RTC
 {
-	class SimpleConsumer : public Consumer, public RTC::RtpStreamSend::Listener
+	class SimpleConsumer : public RTC::Consumer, public RTC::RtpStreamSend::Listener
 	{
 	public:
 		SimpleConsumer(const std::string& id, RTC::Consumer::Listener* listener, json& data);
@@ -31,7 +31,7 @@ namespace RTC
 		float GetLossPercentage() const override;
 		json GetScore() const override;
 
-	protected:
+	private:
 		void Paused(bool wasProducer) override;
 		void Resumed(bool wasProducer) override;
 

@@ -62,6 +62,7 @@ namespace RTC
 		void FillJsonStats(json& jsonArray) const;
 		void HandleRequest(Channel::Request* request);
 		const RTC::RtpParameters& GetRtpParameters() const;
+		RTC::Media::Kind GetKind() const;
 		RTC::RtpParameters::Type GetType() const;
 		const struct RTC::RtpHeaderExtensionIds& GetRtpHeaderExtensionIds() const;
 		bool IsPaused() const;
@@ -120,6 +121,11 @@ namespace RTC
 	inline const RTC::RtpParameters& Producer::GetRtpParameters() const
 	{
 		return this->rtpParameters;
+	}
+
+	inline RTC::Media::Kind Producer::GetKind() const
+	{
+		return this->kind;
 	}
 
 	inline RTC::RtpParameters::Type Producer::GetType() const

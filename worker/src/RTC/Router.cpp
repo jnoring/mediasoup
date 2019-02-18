@@ -5,6 +5,7 @@
 #include "Logger.hpp"
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
+#include "RTC/AudioLevelObserver.hpp"
 #include "RTC/PlainRtpTransport.hpp"
 #include "RTC/WebRtcTransport.hpp"
 
@@ -188,6 +189,30 @@ namespace RTC
 				break;
 			}
 
+			case Channel::Request::MethodId::ROUTER_CREATE_AUDIO_LEVEL_OBSERVER:
+			{
+				std::string rtpObserverId;
+
+				// This may throw
+				SetNewRtpObserverIdFromRequest(request, rtpObserverId);
+
+				auto* audioLevelObserver = new RTC::AudioLevelObserver(rtpObserverId, request->data);
+
+				// Insert into the map.
+				this->mapRtpObservers[rtpObserverId] = audioLevelObserver;
+
+				MS_DEBUG_DEV("AudioLevelObserver created [rtpObserverId:%s]", rtpObserverId.c_str());
+
+				json data(json::object());
+
+				data["threshold"] = audioLevelObserver->GetThreshold();
+				data["interval"]  = audioLevelObserver->GetInterval();
+
+				request->Accept(data);
+
+				break;
+			}
+
 			case Channel::Request::MethodId::TRANSPORT_CLOSE:
 			{
 				// This may throw.
@@ -230,6 +255,30 @@ namespace RTC
 
 				// Delete it.
 				delete rtpObserver;
+
+				request->Accept();
+
+				break;
+			}
+
+			case Channel::Request::MethodId::RTP_OBSERVER_PAUSE:
+			{
+				// This may throw.
+				RTC::RtpObserver* rtpObserver = GetRtpObserverFromRequest(request);
+
+				rtpObserver->Pause();
+
+				request->Accept();
+
+				break;
+			}
+
+			case Channel::Request::MethodId::RTP_OBSERVER_RESUME:
+			{
+				// This may throw.
+				RTC::RtpObserver* rtpObserver = GetRtpObserverFromRequest(request);
+
+				rtpObserver->Resume();
 
 				request->Accept();
 

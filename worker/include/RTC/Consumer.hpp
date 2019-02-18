@@ -40,6 +40,7 @@ namespace RTC
 		virtual void FillJson(json& jsonObject) const;
 		virtual void FillJsonStats(json& jsonArray) const = 0;
 		virtual void HandleRequest(Channel::Request* request);
+		RTC::Media::Kind GetKind() const;
 		RTC::RtpParameters::Type GetType() const;
 		const std::vector<uint32_t>& GetMediaSsrcs() const;
 		bool IsActive() const;
@@ -86,6 +87,13 @@ namespace RTC
 		bool producerPaused{ false };
 		bool producerClosed{ false };
 	};
+
+	/* Inline methods. */
+
+	inline RTC::Media::Kind Consumer::GetKind() const
+	{
+		return this->kind;
+	}
 
 	inline RTC::RtpParameters::Type Consumer::GetType() const
 	{
