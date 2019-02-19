@@ -205,8 +205,9 @@ namespace RTC
 
 				json data(json::object());
 
-				data["threshold"] = audioLevelObserver->GetThreshold();
-				data["interval"]  = audioLevelObserver->GetInterval();
+				data["maxEntries"] = audioLevelObserver->GetMaxEntries();
+				data["threshold"]  = audioLevelObserver->GetThreshold();
+				data["interval"]   = audioLevelObserver->GetInterval();
 
 				request->Accept(data);
 

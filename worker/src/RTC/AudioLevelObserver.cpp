@@ -7,6 +7,7 @@
 #include "Channel/Notifier.hpp"
 #include "RTC/RtpDictionaries.hpp"
 #include <cmath> // std::lround()
+#include <map>
 
 namespace RTC
 {
@@ -16,27 +17,37 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		auto jsonMaxEntriesIt = data.find("maxEntries");
+
+		if (jsonMaxEntriesIt == data.end() || !jsonMaxEntriesIt->is_number_unsigned())
+			MS_THROW_TYPE_ERROR("missing maxEntries");
+
+		this->maxEntries = jsonMaxEntriesIt->get<uint16_t>();
+
+		if (this->maxEntries < 1)
+			MS_THROW_TYPE_ERROR("invalid maxEntries value %" PRIu16, this->maxEntries);
+
 		auto jsonThresholdIt = data.find("threshold");
 
-		if (jsonThresholdIt != data.end() && jsonThresholdIt->is_number())
-		{
-			this->threshold = jsonThresholdIt->get<int8_t>();
+		if (jsonThresholdIt == data.end() || !jsonThresholdIt->is_number())
+			MS_THROW_TYPE_ERROR("missing threshold");
 
-			if (this->threshold < -127 || this->threshold > 0)
-				MS_THROW_TYPE_ERROR("invalid threshold value %" PRIi8, this->threshold);
-		}
+		this->threshold = jsonThresholdIt->get<int8_t>();
+
+		if (this->threshold < -127 || this->threshold > 0)
+			MS_THROW_TYPE_ERROR("invalid threshold value %" PRIi8, this->threshold);
 
 		auto jsonIntervalIt = data.find("interval");
 
-		if (jsonIntervalIt != data.end() && jsonIntervalIt->is_number_unsigned())
-		{
-			this->interval = jsonIntervalIt->get<int16_t>();
+		if (jsonIntervalIt == data.end() || !jsonIntervalIt->is_number_unsigned())
+			MS_THROW_TYPE_ERROR("missing interval");
 
-			if (this->interval < 250)
-				this->interval = 250;
-			else if (this->interval > 5000)
-				this->interval = 5000;
-		}
+		this->interval = jsonIntervalIt->get<uint16_t>();
+
+		if (this->interval < 250)
+			this->interval = 250;
+		else if (this->interval > 5000)
+			this->interval = 5000;
 
 		this->periodicTimer = new Timer(this);
 
@@ -67,10 +78,6 @@ namespace RTC
 
 		// Remove from the map.
 		this->mapProducerDBovs.erase(producer);
-
-		// If this was the current loudest producer, recompute it.
-		if (this->loudest.producer == producer)
-			Update();
 	}
 
 	void AudioLevelObserver::ReceiveRtpPacket(RTC::Producer* producer, RTC::RtpPacket* packet)
@@ -94,10 +101,6 @@ namespace RTC
 	{
 		// Remove from the map.
 		this->mapProducerDBovs.erase(producer);
-
-		// If this was the current loudest producer, recompute it.
-		if (this->loudest.producer == producer)
-			Update();
 	}
 
 	void AudioLevelObserver::ProducerResumed(RTC::Producer* producer)
@@ -114,9 +117,9 @@ namespace RTC
 
 		ResetMapProducerDBovs();
 
-		if (this->loudest.producer)
+		if (!this->silence)
 		{
-			ResetLoudest();
+			this->silence = true;
 
 			Channel::Notifier::Emit(this->id, "silence");
 		}
@@ -133,8 +136,7 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		RTC::Producer* loudestProducer{ nullptr };
-		int8_t loudestDBov{ -127 };
+		std::map<int8_t, RTC::Producer*> mapDBovsProducer;
 
 		for (auto& kv : this->mapProducerDBovs)
 		{
@@ -146,42 +148,39 @@ namespace RTC
 
 			auto avgDBov = -1 * static_cast<int8_t>(std::lround(dBovs.totalSum / dBovs.count));
 
-			if (avgDBov > loudestDBov)
-			{
-				loudestProducer = producer;
-				loudestDBov     = avgDBov;
-			}
+			if (avgDBov >= this->threshold)
+				mapDBovsProducer[avgDBov] = producer;
 		}
 
 		// Clear the map.
 		ResetMapProducerDBovs();
 
-		if (loudestProducer && loudestDBov >= this->threshold)
+		if (mapDBovsProducer.size() > 0)
 		{
-			this->loudest.producer = loudestProducer;
-			this->loudest.dBov     = loudestDBov;
+			this->silence = false;
 
-			json data = json::object();
+			uint16_t idx{ 0 };
+			auto rit  = mapDBovsProducer.crbegin();
+			json data = json::array();
 
-			data["producerId"] = this->loudest.producer->id;
-			data["volume"]     = this->loudest.dBov;
+			for (; idx < this->maxEntries && rit != mapDBovsProducer.crend(); ++idx, ++rit)
+			{
+				data.emplace_back(json::value_t::object);
 
-			Channel::Notifier::Emit(this->id, "loudest", data);
+				auto& jsonEntry = data[idx];
+
+				jsonEntry["producerId"] = rit->second->id;
+				jsonEntry["volume"]     = rit->first;
+			}
+
+			Channel::Notifier::Emit(this->id, "volumes", data);
 		}
-		else if (this->loudest.producer)
+		else if (!this->silence)
 		{
-			ResetLoudest();
+			this->silence = true;
 
 			Channel::Notifier::Emit(this->id, "silence");
 		}
-	}
-
-	void AudioLevelObserver::ResetLoudest()
-	{
-		MS_TRACE();
-
-		this->loudest.producer = nullptr;
-		this->loudest.dBov     = -127;
 	}
 
 	void AudioLevelObserver::ResetMapProducerDBovs()
@@ -201,7 +200,6 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		if (timer == this->periodicTimer)
-			Update();
+		Update();
 	}
 } // namespace RTC

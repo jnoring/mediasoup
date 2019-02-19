@@ -13,13 +13,6 @@ namespace RTC
 	class AudioLevelObserver : public RTC::RtpObserver, public Timer::Listener
 	{
 	private:
-		struct Loudest
-		{
-			RTC::Producer* producer{ nullptr };
-			int8_t dBov{ -127 };
-		};
-
-	private:
 		struct DBovs
 		{
 			uint16_t totalSum{ 0 }; // Sum of dBvos (positive integer).
@@ -31,8 +24,9 @@ namespace RTC
 		~AudioLevelObserver() override;
 
 	public:
+		uint16_t GetMaxEntries() const;
 		int8_t GetThreshold() const;
-		int16_t GetInterval() const;
+		uint16_t GetInterval() const;
 		void AddProducer(RTC::Producer* producer) override;
 		void RemoveProducer(RTC::Producer* producer) override;
 		void ReceiveRtpPacket(RTC::Producer* producer, RTC::RtpPacket* packet) override;
@@ -43,7 +37,6 @@ namespace RTC
 		void Paused() override;
 		void Resumed() override;
 		void Update();
-		void ResetLoudest();
 		void ResetMapProducerDBovs();
 
 		/* Pure virtual methods inherited from Timer. */
@@ -52,23 +45,29 @@ namespace RTC
 
 	private:
 		// Passed by argument.
+		uint16_t maxEntries{ 1 };
 		int8_t threshold{ -80 };
-		int16_t interval{ 1000 };
+		uint16_t interval{ 1000 };
 		// Allocated by this.
 		Timer* periodicTimer{ nullptr };
 		// Others.
 		std::unordered_map<RTC::Producer*, DBovs> mapProducerDBovs;
-		Loudest loudest;
+		bool silence{ true };
 	};
 
 	/* Inline methods. */
+
+	inline uint16_t AudioLevelObserver::GetMaxEntries() const
+	{
+		return this->maxEntries;
+	}
 
 	inline int8_t AudioLevelObserver::GetThreshold() const
 	{
 		return this->threshold;
 	}
 
-	inline int16_t AudioLevelObserver::GetInterval() const
+	inline uint16_t AudioLevelObserver::GetInterval() const
 	{
 		return this->interval;
 	}
