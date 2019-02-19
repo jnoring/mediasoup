@@ -84,6 +84,9 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		if (IsPaused())
+			return;
+
 		uint8_t volume;
 		bool voice;
 
