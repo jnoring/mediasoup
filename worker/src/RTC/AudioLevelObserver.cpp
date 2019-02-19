@@ -93,7 +93,6 @@ namespace RTC
 		if (!packet->ReadAudioLevel(volume, voice))
 			return;
 
-		// Append to the vector of the Producer.
 		auto& dBovs = this->mapProducerDBovs.at(producer);
 
 		dBovs.totalSum += volume;
