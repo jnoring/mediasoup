@@ -220,7 +220,7 @@ namespace RTC
 				// Remove it from the map and delete it.
 				this->mapTransports.erase(transport->id);
 
-				MS_DEBUG_DEV("Transport closed [id:%s]", transport->id.c_str());
+				MS_DEBUG_DEV("Transport closed [transportId:%s]", transport->id.c_str());
 
 				// Delete it.
 				delete transport;
@@ -246,7 +246,7 @@ namespace RTC
 					rtpObservers.erase(rtpObserver);
 				}
 
-				MS_DEBUG_DEV("RtpObserver closed [id:%s]", rtpObserver->id.c_str());
+				MS_DEBUG_DEV("RtpObserver closed [rtpObserverId:%s]", rtpObserver->id.c_str());
 
 				// Delete it.
 				delete rtpObserver;
