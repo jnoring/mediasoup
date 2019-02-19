@@ -84,9 +84,18 @@ test('audioLevelObserver.close() succeeds', async () =>
 	const audioLevelObserver2 =
 		await router.createAudioLevelObserver({ maxEntries: 8 });
 
+	let dump = await router.dump();
+
+	expect(dump.rtpObserverIds.length).toBe(2);
+
 	audioLevelObserver2.close();
 
 	expect(audioLevelObserver2.closed).toBe(true);
+
+	dump = await router.dump();
+
+	expect(dump.rtpObserverIds.length).toBe(1);
+
 }, 2000);
 
 test('AudioLevelObserver emits "routerclose" if Router is closed', async () =>
