@@ -196,7 +196,7 @@ namespace RTC
 		}
 	}
 
-	inline void AudioLevelObserver::OnTimer(Timer* timer)
+	inline void AudioLevelObserver::OnTimer(Timer* /*timer*/)
 	{
 		MS_TRACE();
 

@@ -31,6 +31,8 @@ namespace RTC
 	public:
 		// Passed by argument.
 		const std::string id;
+
+	private:
 		// Others.
 		bool paused{ false };
 	};
