@@ -346,11 +346,7 @@ namespace RTC
 		uint8_t* extenValue = GetExtension(this->midExtensionId, extenLen);
 
 		if (!extenValue || extenLen == 0)
-		{
-			mid.clear();
-
 			return false;
-		}
 
 		mid.assign(reinterpret_cast<const char*>(extenValue), static_cast<size_t>(extenLen));
 
@@ -363,11 +359,7 @@ namespace RTC
 		uint8_t* extenValue = GetExtension(this->ridExtensionId, extenLen);
 
 		if (!extenValue || extenLen == 0)
-		{
-			rid.clear();
-
 			return false;
-		}
 
 		rid.assign(reinterpret_cast<const char*>(extenValue), static_cast<size_t>(extenLen));
 

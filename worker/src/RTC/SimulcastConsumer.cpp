@@ -225,12 +225,20 @@ namespace RTC
 		if (spatialLayer != this->currentSpatialLayer)
 			return;
 
+		// If we need to sync, support key frames and this is not a key frame, ignore
+		// the packet.
+		if (this->syncRequired && this->keyFrameSupported && !packet->IsKeyFrame())
+			return;
+
 		// Whether this is the first packet after re-sync.
 		bool isSyncPacket = this->syncRequired;
 
 		// Sync sequence number and timestamp if required.
 		if (isSyncPacket)
 		{
+			if (packet->IsKeyFrame())
+				MS_DEBUG_TAG(rtp, "sync key frame received");
+
 			this->rtpSeqManager.Sync(packet->GetSequenceNumber());
 			this->rtpTimestampManager.Sync(packet->GetTimestamp());
 
@@ -502,10 +510,9 @@ namespace RTC
 		}
 
 		// Create a RtpStreamSend for sending a single media stream.
-		if (params.useNack)
-			this->rtpStream = new RTC::RtpStreamSend(this, params, 1500);
-		else
-			this->rtpStream = new RTC::RtpStreamSend(this, params, 0);
+		size_t bufferSize = params.useNack ? 1500 : 0;
+
+		this->rtpStream = new RTC::RtpStreamSend(this, params, bufferSize);
 
 		// If the Consumer is paused, tell the RtpStreamSend.
 		if (IsPaused() || IsProducerPaused())
@@ -668,6 +675,9 @@ namespace RTC
 	inline void SimulcastConsumer::OnRtpStreamScore(RTC::RtpStream* /*rtpStream*/, uint8_t /*score*/)
 	{
 		MS_TRACE();
+
+		// TODO: Should recalculate target spatial layer based on our own score
+		// and so on.
 
 		// Emit the score event.
 		EmitScore();
