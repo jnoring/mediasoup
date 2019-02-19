@@ -600,7 +600,7 @@ namespace RTC
 		// Try with the closest spatial layer to the preferred one.
 		else
 		{
-			for (size_t idx = this->producerRtpStreams.size() - 1; idx >= 0; --idx)
+			for (int idx = this->producerRtpStreams.size() - 1; idx >= 0; --idx)
 			{
 				auto spatialLayer       = static_cast<int16_t>(idx);
 				auto* producerRtpStream = this->producerRtpStreams[idx];
