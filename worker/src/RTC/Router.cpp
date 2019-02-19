@@ -203,13 +203,7 @@ namespace RTC
 
 				MS_DEBUG_DEV("AudioLevelObserver created [rtpObserverId:%s]", rtpObserverId.c_str());
 
-				json data(json::object());
-
-				data["maxEntries"] = audioLevelObserver->GetMaxEntries();
-				data["threshold"]  = audioLevelObserver->GetThreshold();
-				data["interval"]   = audioLevelObserver->GetInterval();
-
-				request->Accept(data);
+				request->Accept();
 
 				break;
 			}

@@ -24,9 +24,6 @@ namespace RTC
 		~AudioLevelObserver() override;
 
 	public:
-		uint16_t GetMaxEntries() const;
-		int8_t GetThreshold() const;
-		uint16_t GetInterval() const;
 		void AddProducer(RTC::Producer* producer) override;
 		void RemoveProducer(RTC::Producer* producer) override;
 		void ReceiveRtpPacket(RTC::Producer* producer, RTC::RtpPacket* packet) override;
@@ -54,23 +51,6 @@ namespace RTC
 		std::unordered_map<RTC::Producer*, DBovs> mapProducerDBovs;
 		bool silence{ true };
 	};
-
-	/* Inline methods. */
-
-	inline uint16_t AudioLevelObserver::GetMaxEntries() const
-	{
-		return this->maxEntries;
-	}
-
-	inline int8_t AudioLevelObserver::GetThreshold() const
-	{
-		return this->threshold;
-	}
-
-	inline uint16_t AudioLevelObserver::GetInterval() const
-	{
-		return this->interval;
-	}
 } // namespace RTC
 
 #endif
