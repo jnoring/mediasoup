@@ -78,10 +78,12 @@ namespace RTC
 		this->rtpStream->FillJsonStats(jsonArray[0]);
 
 		// Add stats of our recv stream.
-		if (this->producerRtpStream)
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+
+		if (producerCurrentRtpStream)
 		{
 			jsonArray.emplace_back(json::value_t::object);
-			this->producerRtpStream->FillJsonStats(jsonArray[1]);
+			producerCurrentRtpStream->FillJsonStats(jsonArray[1]);
 		}
 	}
 
@@ -164,11 +166,11 @@ namespace RTC
 
 		this->producerRtpStreams[spatialLayer] = rtpStream;
 
-		// TODO: Recalculate layers.
+		// Recalculate layers.
+		RecalculateTargetSpatialLayer();
 
-		// TODO: Remove.
-		this->producerRtpStream = rtpStream;
-
+		// TODO: Probably just if this stream is the current spatial layer.
+		//
 		// Emit the score event.
 		EmitScore();
 	}
@@ -177,10 +179,13 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		// Recalculate layers.
+		RecalculateTargetSpatialLayer();
+
+		// TODO: Probably just if this stream is the current spatial layer.
+		//
 		// Emit the score event.
 		EmitScore();
-
-		// TODO: Recalculate layers.
 	}
 
 	void SimulcastConsumer::SendRtpPacket(RTC::RtpPacket* packet)
@@ -202,28 +207,17 @@ namespace RTC
 			return;
 		}
 
-		// If we are waiting for a key frame and this is not one, ignore the packet.
-		if (this->syncRequired && this->keyFrameSupported && !packet->IsKeyFrame())
-			return;
-
 		auto spatialLayer = this->mapMappedSsrcSpatialLayer.at(packet->GetSsrc());
 
-		// Check whether this is the key frame we are waiting for in order to update
+		// Check whether this is the packet we are waiting for in order to update
 		// the current spatial layer.
 		if (this->currentSpatialLayer != this->targetSpatialLayer && spatialLayer == this->targetSpatialLayer)
 		{
-			// Just check if the packet contains a key frame when we need to sync.
-			bool isSyncKeyFrame = this->syncRequired && packet->IsKeyFrame();
+			// Ignore if key frame is supported and this is not one.
+			if (this->keyFrameSupported && !packet->IsKeyFrame())
+				return;
 
-			if (isSyncKeyFrame || !this->keyFrameSupported)
-			{
-				if (isSyncKeyFrame)
-				{
-					MS_DEBUG_TAG(rtp, "sync key frame received for target spatial layer %" PRIi16, spatialLayer);
-				}
-
-				SetCurrentSpatialLayer(this->targetSpatialLayer);
-			}
+			SetCurrentSpatialLayer(this->targetSpatialLayer);
 		}
 
 		// If the packet belongs to different spatial layer than the one being sent,
@@ -407,16 +401,18 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		if (!IsActive() || !this->producerRtpStream)
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+
+		if (!IsActive() || !producerCurrentRtpStream)
 			return 0;
 
-		if (this->producerRtpStream->GetLossPercentage() >= this->rtpStream->GetLossPercentage())
+		if (producerCurrentRtpStream->GetLossPercentage() >= this->rtpStream->GetLossPercentage())
 		{
 			return 0;
 		}
 		else
 		{
-			return this->rtpStream->GetLossPercentage() - this->producerRtpStream->GetLossPercentage();
+			return this->rtpStream->GetLossPercentage() - producerCurrentRtpStream->GetLossPercentage();
 		}
 	}
 
@@ -424,10 +420,11 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		json data = json::object();
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+		json data                      = json::object();
 
-		if (this->producerRtpStream)
-			data["producer"] = this->producerRtpStream->GetScore();
+		if (producerCurrentRtpStream)
+			data["producer"] = producerCurrentRtpStream->GetScore();
 		else
 			data["producer"] = 0;
 
@@ -528,22 +525,36 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		if (!IsActive() || !this->producerRtpStream || this->kind != RTC::Media::Kind::VIDEO)
+		auto* producerTargetRtpStream  = GetProducerTargetRtpStream();
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+
+		if (!IsActive() || this->kind != RTC::Media::Kind::VIDEO)
 			return;
 
-		auto mappedSsrc = this->consumableRtpEncodings[0].ssrc;
+		if (producerTargetRtpStream)
+		{
+			auto mappedSsrc = this->consumableRtpEncodings[this->targetSpatialLayer].ssrc;
 
-		this->listener->OnConsumerKeyFrameRequested(this, mappedSsrc);
+			this->listener->OnConsumerKeyFrameRequested(this, mappedSsrc);
+		}
+
+		if (producerCurrentRtpStream && producerCurrentRtpStream != producerTargetRtpStream)
+		{
+			auto mappedSsrc = this->consumableRtpEncodings[this->currentSpatialLayer].ssrc;
+
+			this->listener->OnConsumerKeyFrameRequested(this, mappedSsrc);
+		}
 	}
 
 	inline void SimulcastConsumer::EmitScore() const
 	{
 		MS_TRACE();
 
-		json data = json::object();
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+		json data                      = json::object();
 
-		if (this->producerRtpStream)
-			data["producer"] = this->producerRtpStream->GetScore();
+		if (producerCurrentRtpStream)
+			data["producer"] = producerCurrentRtpStream->GetScore();
 		else
 			data["producer"] = 0;
 
@@ -556,15 +567,17 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		if (spatialLayer == this->currentSpatialLayer)
+			return;
+
 		this->currentSpatialLayer = spatialLayer;
 
+		this->syncRequired = true;
+
 		MS_DEBUG_DEV(
-		  "currentSpatialLayer changed to %" PRIi16 " [consumerId:%s]",
+		  "current spatial layer changed to %" PRIi16 " [consumerId:%s]",
 		  this->currentSpatialLayer,
 		  this->id.c_str());
-
-		if (!IsActive())
-			return;
 
 		json data(json::object());
 
@@ -577,152 +590,79 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		// TODO: Must set this here somewhere below.
-		// Resynchronize the stream.
-		this->syncRequired = true;
+		int16_t newTargetSpatialLayer{ -1 };
 
-		// RTC::RtpEncodingParameters::Profile newTargetProfile;
-		// auto probatedProfile = RTC::RtpEncodingParameters::Profile::NONE;
+		// No Producer streams.
+		if (this->producerRtpStreams.empty())
+		{
+			newTargetSpatialLayer = -1;
+		}
+		// Try with the closest spatial layer to the preferred one.
+		else
+		{
+			for (size_t idx = this->producerRtpStreams.size() - 1; idx >= 0; --idx)
+			{
+				auto spatialLayer       = static_cast<int16_t>(idx);
+				auto* producerRtpStream = this->producerRtpStreams[idx];
 
-		// // Probation finished.
-		// if (this->probationSpatialLayer != -1 && this->probationPackets == 0)
-		// {
-		// 	probatedProfile      = this->probingProfile;
-		// 	this->probationSpatialLayer = -1;
-		// }
+				// Ignore spatial layers higher than the preferred one.
+				if (spatialLayer > this->preferredSpatialLayer)
+					continue;
 
-		// // There are no profiles, select none or default, depending on whether this
-		// // is single stream or simulcast/SVC.
-		// if (this->mapProfileRtpStream.empty())
-		// {
-		// 	MS_ASSERT(
-		// 	  this->effectiveProfile == RtpEncodingParameters::Profile::NONE ||
-		// 	    this->effectiveProfile == RtpEncodingParameters::Profile::DEFAULT,
-		// 	  "no profiles, but effective profile is not none nor default");
+				// Ignore spatial layers for non existing or unhealthy Producer streams.
+				if (!producerRtpStream || producerRtpStream->GetScore() < 5)
+					continue;
 
-		// 	if (this->effectiveProfile == RtpEncodingParameters::Profile::NONE)
-		// 		newTargetProfile = RtpEncodingParameters::Profile::NONE;
-		// 	else
-		// 		newTargetProfile = RtpEncodingParameters::Profile::DEFAULT;
-		// }
-		// // RTP state is unhealty.
-		// else if (IsEnabled() && !this->rtpMonitor->IsHealthy())
-		// {
-		// 	// Ongoing probation, abort.
-		// 	if (IsProbing())
-		// 	{
-		// 		StopProbation();
+				newTargetSpatialLayer = spatialLayer;
 
-		// 		return;
-		// 	}
+				break;
+			}
 
-		// 	// Probated profile did not succeed.
-		// 	if (probatedProfile != RtpEncodingParameters::Profile::NONE)
-		// 		return;
+			// TODO: It may happen that spatial layer 1 exists and it's healthy while 0
+			// does not exist or is unhealthy. If preferred spatial layer was 0 then we
+			// end here without newTargetSpatialLayer. In that scenario we should take
+			// whichever available.
+		}
 
-		// 	auto it = this->mapProfileRtpStream.find(this->effectiveProfile);
+		// Nothing changed.
+		if (newTargetSpatialLayer == this->targetSpatialLayer)
+			return;
 
-		// 	// This is already the lowest profile.
-		// 	if (it == this->mapProfileRtpStream.begin())
-		// 		return;
+		this->targetSpatialLayer = newTargetSpatialLayer;
 
-		// 	// Downgrade the target profile.
-		// 	newTargetProfile = (std::prev(it))->first;
-		// }
-		// // If there is no preferred profile, get the highest one.
-		// else if (GetPreferredProfile() == RTC::RtpEncodingParameters::Profile::DEFAULT)
-		// {
-		// 	auto it = this->mapProfileRtpStream.crbegin();
+		// Already using the target layer. Do nothing.
+		if (this->targetSpatialLayer == this->currentSpatialLayer)
+			return;
 
-		// 	newTargetProfile = it->first;
-		// }
-		// // Try with the closest profile to the preferred one.
-		// else
-		// {
-		// 	auto it = this->mapProfileRtpStream.lower_bound(this->preferredProfile);
+		RequestKeyFrame();
 
-		// 	// Preferred profile is actually present.
-		// 	if (it->first == this->preferredProfile)
-		// 	{
-		// 		newTargetProfile = it->first;
-		// 	}
-		// 	// The lowest profile is already higher than the preferred, use it.
-		// 	else if (it == this->mapProfileRtpStream.begin())
-		// 	{
-		// 		newTargetProfile = it->first;
-		// 	}
-		// 	// There is a lower profile available, prefer it over any higher one.
-		// 	else
-		// 	{
-		// 		newTargetProfile = (--it)->first;
-		// 	}
-		// }
+		MS_DEBUG_TAG(
+		  rtp,
+		  "target spatial layer changed to %" PRIi16 " [consumerId:%s]",
+		  this->targetSpatialLayer,
+		  this->id.c_str());
+	}
 
-		// // Not enabled. Make this the target profile.
-		// if (!IsEnabled())
-		// {
-		// 	this->targetProfile = newTargetProfile;
-		// }
-		// // Ongoing probation.
-		// else if (IsProbing())
-		// {
-		// 	// New profile higher or equal than the one being probed. Do not upgrade.
-		// 	if (newTargetProfile >= this->probingProfile)
-		// 		return;
+	inline RTC::RtpStream* SimulcastConsumer::GetProducerCurrentRtpStream() const
+	{
+		MS_TRACE();
 
-		// 	// New profile lower than the one begin probed. Stop probation.
-		// 	StopProbation();
-		// 	this->targetProfile = newTargetProfile;
-		// }
-		// // The profile has just been successfully probated.
-		// else if (probatedProfile == newTargetProfile)
-		// {
-		// 	this->targetProfile = newTargetProfile;
-		// }
-		// // New profile is higher than current target.
-		// else if (newTargetProfile > this->targetProfile)
-		// {
-		// 	// No specific profile is being sent.
-		// 	if (
-		// 	  this->targetProfile == RTC::RtpEncodingParameters::Profile::NONE ||
-		// 	  this->targetProfile == RTC::RtpEncodingParameters::Profile::DEFAULT)
-		// 	{
-		// 		this->targetProfile = newTargetProfile;
-		// 	}
-		// 	else if (force)
-		// 	{
-		// 		this->targetProfile = newTargetProfile;
-		// 	}
-		// 	// Probe it before promotion.
-		// 	// TODO: If we are receiving REMB, consider such value and avoid probation.
-		// 	else
-		// 	{
-		// 		StartProbation(newTargetProfile);
+		if (this->currentSpatialLayer == -1)
+			return nullptr;
 
-		// 		MS_DEBUG_TAG(
-		// 		  rtp,
-		// 		  "probing profile [%s]",
-		// 		  RTC::RtpEncodingParameters::profile2String[this->probingProfile].c_str());
+		// This may return nullptr.
+		return this->producerRtpStreams.at(this->currentSpatialLayer);
+	}
 
-		// 		return;
-		// 	}
-		// }
-		// // New profile is lower than the target profile.
-		// else
-		// {
-		// 	this->targetProfile = newTargetProfile;
-		// }
+	inline RTC::RtpStream* SimulcastConsumer::GetProducerTargetRtpStream() const
+	{
+		MS_TRACE();
 
-		// if (this->targetProfile == this->effectiveProfile)
-		// 	return;
+		if (this->targetSpatialLayer == -1)
+			return nullptr;
 
-		// if (IsEnabled() && !IsPaused())
-		// 	RequestKeyFrame();
-
-		// MS_DEBUG_TAG(
-		//   rtp,
-		//   "target profile set [profile:%s]",
-		//   RTC::RtpEncodingParameters::profile2String[this->targetProfile].c_str());
+		// This may return nullptr.
+		return this->producerRtpStreams.at(this->targetSpatialLayer);
 	}
 
 	inline void SimulcastConsumer::OnRtpStreamScore(RTC::RtpStream* /*rtpStream*/, uint8_t /*score*/)

@@ -40,6 +40,8 @@ namespace RTC
 		void EmitScore() const;
 		void SetCurrentSpatialLayer(int16_t spatialLayer);
 		void RecalculateTargetSpatialLayer(bool force = false);
+		RTC::RtpStream* GetProducerCurrentRtpStream() const;
+		RTC::RtpStream* GetProducerTargetRtpStream() const;
 
 		/* Pure virtual methods inherited from RtpStreamSend::Listener. */
 	public:
@@ -50,7 +52,7 @@ namespace RTC
 		// Allocated by this.
 		RTC::RtpStreamSend* rtpStream{ nullptr };
 		std::unordered_map<uint32_t, int16_t> mapMappedSsrcSpatialLayer;
-		std::vector<RTC::RtpStream*> producerRtpStreams;
+		std::vector<RTC::RtpStream*> producerRtpStreams; // Indexed by spatial layer.
 		// Others.
 		bool keyFrameSupported{ false };
 		bool syncRequired{ true };
@@ -59,7 +61,6 @@ namespace RTC
 		RTC::SeqManager<uint16_t> rtpSeqManager;
 		RTC::SeqManager<uint32_t> rtpTimestampManager;
 		std::unique_ptr<RTC::Codecs::EncodingContext> encodingContext;
-		RTC::RtpStream* producerRtpStream{ nullptr }; // TODO: REMOVE
 		int16_t preferredSpatialLayer{ -1 };
 		int16_t targetSpatialLayer{ -1 };
 		int16_t currentSpatialLayer{ -1 };

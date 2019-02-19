@@ -134,7 +134,8 @@ namespace RTC
 			return;
 		}
 
-		// If we are waiting for a key frame and this is not one, ignore the packet.
+		// If we need to sync, support key frames and this is not a key frame, ignore
+		// the packet.
 		if (this->syncRequired && this->keyFrameSupported && !packet->IsKeyFrame())
 			return;
 
@@ -169,6 +170,9 @@ namespace RTC
 			this->syncRequired = false;
 		}
 
+		// TODO: Not sure how to deal with it, but if this happens (and we drop the packet)
+		// we shouldn't have unset the syncRequired flag, etc.
+		//
 		// Rewrite payload if needed. Drop packet if necessary.
 		if (this->encodingContext && !packet->EncodePayload(this->encodingContext.get()))
 		{
