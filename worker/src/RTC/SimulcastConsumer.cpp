@@ -87,6 +87,20 @@ namespace RTC
 		}
 	}
 
+	void SimulcastConsumer::FillJsonScore(json& jsonObject) const
+	{
+		MS_TRACE();
+
+		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
+
+		if (producerCurrentRtpStream)
+			jsonObject["producer"] = producerCurrentRtpStream->GetScore();
+		else
+			jsonObject["producer"] = 0;
+
+		jsonObject["consumer"] = this->rtpStream->GetScore();
+	}
+
 	void SimulcastConsumer::HandleRequest(Channel::Request* request)
 	{
 		MS_TRACE();
@@ -424,23 +438,6 @@ namespace RTC
 		}
 	}
 
-	json SimulcastConsumer::GetScore() const
-	{
-		MS_TRACE();
-
-		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
-		json data                      = json::object();
-
-		if (producerCurrentRtpStream)
-			data["producer"] = producerCurrentRtpStream->GetScore();
-		else
-			data["producer"] = 0;
-
-		data["consumer"] = this->rtpStream->GetScore();
-
-		return data;
-	}
-
 	void SimulcastConsumer::Paused(bool /*wasProducer*/)
 	{
 		MS_TRACE();
@@ -557,15 +554,9 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		auto* producerCurrentRtpStream = GetProducerCurrentRtpStream();
-		json data                      = json::object();
+		json data = json::object();
 
-		if (producerCurrentRtpStream)
-			data["producer"] = producerCurrentRtpStream->GetScore();
-		else
-			data["producer"] = 0;
-
-		data["consumer"] = this->rtpStream->GetScore();
+		FillJsonScore(data);
 
 		Channel::Notifier::Emit(this->id, "score", data);
 	}

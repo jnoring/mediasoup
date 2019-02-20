@@ -17,6 +17,7 @@ namespace RTC
 	public:
 		void FillJson(json& jsonObject) const override;
 		void FillJsonStats(json& jsonArray) const override;
+		void FillJsonScore(json& jsonArray) const override;
 		void HandleRequest(Channel::Request* request) override;
 		void TransportConnected() override;
 		void ProducerNewRtpStream(RTC::RtpStream* rtpStream, uint32_t mappedSsrc) override;
@@ -29,7 +30,6 @@ namespace RTC
 		void ReceiveRtcpReceiverReport(RTC::RTCP::ReceiverReport* report) override;
 		uint32_t GetTransmissionRate(uint64_t now) override;
 		float GetLossPercentage() const override;
-		json GetScore() const override;
 
 	private:
 		void Paused(bool wasProducer) override;

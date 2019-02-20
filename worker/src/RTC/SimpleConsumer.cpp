@@ -67,6 +67,18 @@ namespace RTC
 		}
 	}
 
+	void SimpleConsumer::FillJsonScore(json& jsonObject) const
+	{
+		MS_TRACE();
+
+		if (this->producerRtpStream)
+			jsonObject["producer"] = this->producerRtpStream->GetScore();
+		else
+			jsonObject["producer"] = 0;
+
+		jsonObject["consumer"] = this->rtpStream->GetScore();
+	}
+
 	void SimpleConsumer::HandleRequest(Channel::Request* request)
 	{
 		MS_TRACE();
@@ -331,22 +343,6 @@ namespace RTC
 		}
 	}
 
-	json SimpleConsumer::GetScore() const
-	{
-		MS_TRACE();
-
-		json data = json::object();
-
-		if (this->producerRtpStream)
-			data["producer"] = this->producerRtpStream->GetScore();
-		else
-			data["producer"] = 0;
-
-		data["consumer"] = this->rtpStream->GetScore();
-
-		return data;
-	}
-
 	void SimpleConsumer::Paused(bool /*wasProducer*/)
 	{
 		MS_TRACE();
@@ -452,12 +448,7 @@ namespace RTC
 
 		json data = json::object();
 
-		if (this->producerRtpStream)
-			data["producer"] = this->producerRtpStream->GetScore();
-		else
-			data["producer"] = 0;
-
-		data["consumer"] = this->rtpStream->GetScore();
+		FillJsonScore(data);
 
 		Channel::Notifier::Emit(this->id, "score", data);
 	}

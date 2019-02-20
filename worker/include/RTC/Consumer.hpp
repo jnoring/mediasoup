@@ -39,6 +39,7 @@ namespace RTC
 	public:
 		virtual void FillJson(json& jsonObject) const;
 		virtual void FillJsonStats(json& jsonArray) const = 0;
+		virtual void FillJsonScore(json& jsonArray) const = 0;
 		virtual void HandleRequest(Channel::Request* request);
 		RTC::Media::Kind GetKind() const;
 		RTC::RtpParameters::Type GetType() const;
@@ -60,7 +61,6 @@ namespace RTC
 		virtual void ReceiveRtcpReceiverReport(RTC::RTCP::ReceiverReport* report)           = 0;
 		virtual uint32_t GetTransmissionRate(uint64_t now)                                  = 0;
 		virtual float GetLossPercentage() const                                             = 0;
-		virtual json GetScore() const                                                       = 0;
 
 	protected:
 		virtual void Paused(bool wasProducer)  = 0;
