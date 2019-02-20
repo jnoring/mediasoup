@@ -46,12 +46,12 @@ Commandline options and URL query parameters mean (some of them):
 
 Notes:
 
-* `ffmpeg` can send RTP and RTCP to the same port, which is great, but it cannot listen for RTP and RTCP in the same local port. So we need something in `PlainRtpTransport` to send RTP and RTCP to different destination ports. Easier: we can have a tuple for RTP and another for RTCP in `PlainRtpTransport` (easy).
+* `ffmpeg` can send RTP and RTCP to the same port, which is great, but it cannot listen for RTP and RTCP in the same local port. So we must disable `rtcp-mux` in the `PlainRtpTransport` and send RTP and RTCP to different destination ports.
 
 
 ## Using ffmpeg to send audio to mediasoup
 
-Let's assume that we want to read an mp3 file (located in the mediasoup server) and send it to the mediasoup "room". In mediasoup v3 it would be something as follows (still to be designed):
+Let's assume that we want to read an mp3 file (located in the server) and send it to the SFU. In mediasoup v3 it would be something as follows:
 
 * Decide which IP, RTP port and RTCP port we are gonna use in `ffmpeg`:
   - IP: 127.0.0.1
@@ -77,7 +77,7 @@ const rtpPort = transport.tuple.localPort; // => For example 3301.
 const rtcpPort = transport.rtcpTuple.localPort; // => For example 4502.
 
 // Provide ffmpeg IP/ports.
-transport.connect(
+await transport.connect(
   {
     ip       : '127.0.0.1',
     port     : 2000, 
@@ -109,10 +109,8 @@ const producer = await transport.produce(
       ],
       encodings :
       [
-        {
-          ssrc : 12345678
-        }
-      ],
+        { ssrc: 12345678 }
+      ]
     }
   });
 ```
@@ -126,7 +124,7 @@ $ ffmpeg \
   -f rtp "rtp://127.0.0.1:3301?rtcpport=4502&localrtpport=2000&localrtcpport=2001"
 ```
 
-**NOTE:** The above JS code (`router.createPlainTransport()` and `transport.produce()`) could be included into an HTTP API server running in the same Node.js in which mediasoup runs. So the ffmpeg "client" could be easily wrapped into a Bash script that calls some `curl` commands followed by the `ffmpeg` command with the retrieved parameters.
+**NOTE:** The above JS code (`router.createPlainTransport()` and `transport.produce()`) could be included into an HTTP API server running in the same Node.js in which mediasoup runs. So the ffmpeg "client" could be easily wrapped into a Shell script that calls some `curl` commands followed by the `ffmpeg` command with the retrieved parameters.
 
 
 ## TODO
