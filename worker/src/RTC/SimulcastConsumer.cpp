@@ -591,6 +591,9 @@ namespace RTC
 		data["spatialLayer"] = this->currentSpatialLayer;
 
 		Channel::Notifier::Emit(this->id, "layerschange", data);
+
+		// Emit the score event.
+		EmitScore();
 	}
 
 	void SimulcastConsumer::RecalculateTargetSpatialLayer(bool /*force*/)
