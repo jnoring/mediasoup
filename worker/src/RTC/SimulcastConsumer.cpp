@@ -231,7 +231,11 @@ namespace RTC
 			if (this->keyFrameSupported && !packet->IsKeyFrame())
 				return;
 
+			// Change current spatial layer.
 			SetCurrentSpatialLayer(this->targetSpatialLayer);
+
+			// Need to resync the stream.
+			this->syncRequired = true;
 		}
 
 		// If the packet belongs to different spatial layer than the one being sent,
@@ -569,8 +573,6 @@ namespace RTC
 			return;
 
 		this->currentSpatialLayer = spatialLayer;
-
-		this->syncRequired = true;
 
 		MS_DEBUG_DEV(
 		  "current spatial layer changed to %" PRIi16 " [consumerId:%s]",
