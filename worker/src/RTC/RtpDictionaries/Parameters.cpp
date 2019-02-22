@@ -60,7 +60,7 @@ namespace RTC
 			{
 				case json::value_t::boolean:
 				{
-					this->mapKeyValues[key] = Value(value.get<bool>());
+					this->mapKeyValues.emplace(key, value.get<bool>());
 
 					break;
 				}
@@ -68,21 +68,21 @@ namespace RTC
 				case json::value_t::number_integer:
 				case json::value_t::number_unsigned:
 				{
-					this->mapKeyValues[key] = Value(value.get<int32_t>());
+					this->mapKeyValues.emplace(key, value.get<int32_t>());
 
 					break;
 				}
 
 				case json::value_t::number_float:
 				{
-					this->mapKeyValues[key] = Value(value.get<double>());
+					this->mapKeyValues.emplace(key, value.get<double>());
 
 					break;
 				}
 
 				case json::value_t::string:
 				{
-					this->mapKeyValues[key] = Value(value.get<std::string>());
+					this->mapKeyValues.emplace(key, value.get<std::string>());
 
 					break;
 				}
@@ -105,7 +105,7 @@ namespace RTC
 					}
 
 					if (!arrayOfIntegers.empty() && isValid)
-						this->mapKeyValues[key] = Value(arrayOfIntegers);
+						this->mapKeyValues.emplace(key, arrayOfIntegers);
 
 					break;
 				}
@@ -113,6 +113,91 @@ namespace RTC
 				default:; // Just ignore other value types.
 			}
 		}
+	}
+
+	bool Parameters::HasBoolean(const std::string& key) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+
+		return value.type == Value::Type::BOOLEAN;
+	}
+
+	bool Parameters::HasInteger(const std::string& key) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+
+		return value.type == Value::Type::INTEGER;
+	}
+
+	bool Parameters::HasDouble(const std::string& key) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+
+		return value.type == Value::Type::DOUBLE;
+	}
+
+	bool Parameters::HasString(const std::string& key) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+
+		return value.type == Value::Type::STRING;
+	}
+
+	bool Parameters::HasArrayOfIntegers(const std::string& key) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+
+		return value.type == Value::Type::ARRAY_OF_INTEGERS;
+	}
+
+	bool Parameters::IncludesInteger(const std::string& key, int32_t integer) const
+	{
+		MS_TRACE();
+
+		auto it = this->mapKeyValues.find(key);
+
+		if (it == this->mapKeyValues.end())
+			return false;
+
+		auto& value = it->second;
+		auto& array = value.arrayOfIntegers;
+
+		return std::find(array.begin(), array.end(), integer) != array.end();
 	}
 
 	bool Parameters::GetBoolean(const std::string& key) const

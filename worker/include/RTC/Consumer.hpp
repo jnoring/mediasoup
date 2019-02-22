@@ -38,8 +38,8 @@ namespace RTC
 
 	public:
 		virtual void FillJson(json& jsonObject) const;
-		virtual void FillJsonStats(json& jsonArray) const = 0;
-		virtual void FillJsonScore(json& jsonArray) const = 0;
+		virtual void FillJsonStats(json& jsonArray) const  = 0;
+		virtual void FillJsonScore(json& jsonObject) const = 0;
 		virtual void HandleRequest(Channel::Request* request);
 		RTC::Media::Kind GetKind() const;
 		RTC::RtpParameters::Type GetType() const;

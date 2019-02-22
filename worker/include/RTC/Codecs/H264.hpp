@@ -3,7 +3,6 @@
 
 #include "common.hpp"
 #include "RTC/Codecs/PayloadDescriptorHandler.hpp"
-#include "RTC/RtpDictionaries.hpp"
 #include "RTC/RtpPacket.hpp"
 
 namespace RTC

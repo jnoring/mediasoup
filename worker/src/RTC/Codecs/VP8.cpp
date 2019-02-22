@@ -3,7 +3,6 @@
 
 #include "RTC/Codecs/VP8.hpp"
 #include "Logger.hpp"
-#include "Utils.hpp"
 
 namespace RTC
 {
