@@ -110,6 +110,7 @@ void RTC::KeyFrameRequestManager::KeyFrameReceived(uint32_t ssrc)
 		return;
 
 	auto* pendingKeyFrameInfo = it->second;
+
 	delete pendingKeyFrameInfo;
 
 	this->mapSsrcPendingKeyFrameInfo.erase(it);
@@ -127,6 +128,7 @@ inline void RTC::KeyFrameRequestManager::OnKeyFrameRequestTimeout(PendingKeyFram
 	if (!pendingKeyFrameInfo->GetRetryOnTimeout())
 	{
 		auto* pendingKeyFrameInfo = it->second;
+
 		delete pendingKeyFrameInfo;
 
 		this->mapSsrcPendingKeyFrameInfo.erase(it);
