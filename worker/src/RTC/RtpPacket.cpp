@@ -551,7 +551,9 @@ namespace RTC
 
 				// Counting padding bytes.
 				while ((ptr < extensionEnd) && (*ptr == 0))
+				{
 					++ptr;
+				}
 			}
 		}
 		// Parse Two-Bytes extension header.
@@ -589,7 +591,9 @@ namespace RTC
 
 				// Counting padding bytes.
 				while ((ptr < extensionEnd) && (*ptr == 0))
+				{
 					++ptr;
+				}
 			}
 		}
 	}
