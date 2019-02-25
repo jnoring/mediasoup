@@ -277,6 +277,10 @@ namespace RTC
 
 				request->Accept(data);
 
+				// If the Transport is already connected tell it to the new Consumer.
+				if (IsConnected())
+					consumer->TransportConnected();
+
 				break;
 			}
 

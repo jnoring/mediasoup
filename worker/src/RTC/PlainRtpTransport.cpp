@@ -375,9 +375,6 @@ namespace RTC
 					throw;
 				}
 
-				// Assume we are connected and tell the parent class.
-				RTC::Transport::Connected();
-
 				// Tell the caller about the selected local DTLS role.
 				json data(json::object());
 
@@ -387,6 +384,10 @@ namespace RTC
 					this->rtcpTuple->FillJson(data["rtcpTuple"]);
 
 				request->Accept(data);
+
+				// Assume we are connected (there is no much more we can do to know it)
+				// and tell the parent class.
+				RTC::Transport::Connected();
 
 				break;
 			}
