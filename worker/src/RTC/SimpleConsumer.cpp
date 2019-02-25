@@ -388,19 +388,19 @@ namespace RTC
 
 		for (auto& fb : mediaCodec->rtcpFeedback)
 		{
-			if (!params.useNack && fb.type == "nack")
+			if (!params.useNack && fb.type == "nack" && fb.parameter == "")
 			{
 				MS_DEBUG_2TAGS(rtcp, rtx, "NACK supported");
 
 				params.useNack = true;
 			}
-			if (!params.usePli && fb.type == "nack" && fb.parameter == "pli")
+			else if (!params.usePli && fb.type == "nack" && fb.parameter == "pli")
 			{
 				MS_DEBUG_TAG(rtcp, "PLI supported");
 
 				params.usePli = true;
 			}
-			if (!params.useFir && fb.type == "ccm" && fb.parameter == "fir")
+			else if (!params.useFir && fb.type == "ccm" && fb.parameter == "fir")
 			{
 				MS_DEBUG_TAG(rtcp, "FIR supported");
 

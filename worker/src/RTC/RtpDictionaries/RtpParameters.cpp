@@ -16,14 +16,16 @@ namespace RTC
 		{ "none",      RtpParameters::Type::NONE      },
 		{ "simple",    RtpParameters::Type::SIMPLE    },
 		{ "simulcast", RtpParameters::Type::SIMULCAST },
-		{ "svc",       RtpParameters::Type::SVC       }
+		{ "svc",       RtpParameters::Type::SVC       },
+		{ "pipe",      RtpParameters::Type::PIPE      }
 	};
 	std::map<RtpParameters::Type, std::string> RtpParameters::type2String =
 	{
 		{ RtpParameters::Type::NONE,      "none"      },
 		{ RtpParameters::Type::SIMPLE,    "simple"    },
 		{ RtpParameters::Type::SIMULCAST, "simulcast" },
-		{ RtpParameters::Type::SVC,       "svc"       }
+		{ RtpParameters::Type::SVC,       "svc"       },
+		{ RtpParameters::Type::PIPE,      "pipe"      }
 	};
 	// clang-format on
 

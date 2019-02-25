@@ -1,18 +1,15 @@
-#ifndef MS_RTC_SIMPLE_CONSUMER_HPP
-#define MS_RTC_SIMPLE_CONSUMER_HPP
+#ifndef MS_RTC_PIPE_CONSUMER_HPP
+#define MS_RTC_PIPE_CONSUMER_HPP
 
-#include "RTC/Codecs/PayloadDescriptorHandler.hpp"
 #include "RTC/Consumer.hpp"
-#include "RTC/RtpStreamSend.hpp"
-#include "RTC/SeqManager.hpp"
 
 namespace RTC
 {
-	class SimpleConsumer : public RTC::Consumer, public RTC::RtpStreamSend::Listener
+	class PipeConsumer : public RTC::Consumer
 	{
 	public:
-		SimpleConsumer(const std::string& id, RTC::Consumer::Listener* listener, json& data);
-		~SimpleConsumer() override;
+		PipeConsumer(const std::string& id, RTC::Consumer::Listener* listener, json& data);
+		~PipeConsumer() override;
 
 	public:
 		void FillJson(json& jsonObject) const override;
@@ -34,27 +31,10 @@ namespace RTC
 	private:
 		void Paused(bool wasProducer) override;
 		void Resumed(bool wasProducer) override;
-		void CreateRtpStream();
 		void RequestKeyFrame();
-		void EmitScore() const;
-
-		/* Pure virtual methods inherited from RtpStreamSend::Listener. */
-	public:
-		void OnRtpStreamScore(RTC::RtpStream* rtpStream, uint8_t score) override;
-		void OnRtpStreamRetransmitRtpPacket(RTC::RtpStreamSend* rtpStream, RTC::RtpPacket* packet) override;
 
 	private:
-		// Allocated by this.
-		RTC::RtpStreamSend* rtpStream{ nullptr };
-		// Others.
-		bool keyFrameSupported{ false };
-		bool syncRequired{ true };
-		uint64_t lastRtcpSentTime{ 0 };
-		uint16_t maxRtcpInterval{ 0 };
-		RTC::SeqManager<uint16_t> rtpSeqManager;
-		RTC::SeqManager<uint32_t> rtpTimestampManager;
-		std::unique_ptr<RTC::Codecs::EncodingContext> encodingContext;
-		RTC::RtpStream* producerRtpStream{ nullptr };
+		uint8_t fractionLost{ 0 };
 	};
 } // namespace RTC
 

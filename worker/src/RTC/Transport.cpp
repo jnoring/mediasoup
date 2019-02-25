@@ -7,6 +7,7 @@
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
 #include "RTC/Consumer.hpp"
+#include "RTC/PipeConsumer.hpp"
 #include "RTC/RTCP/FeedbackPs.hpp"
 #include "RTC/RTCP/FeedbackPsAfb.hpp"
 #include "RTC/RTCP/FeedbackPsRemb.hpp"
@@ -259,7 +260,15 @@ namespace RTC
 
 					case RTC::RtpParameters::Type::SVC:
 					{
-						MS_THROW_TYPE_ERROR("not implemented type 'svc'");
+						MS_THROW_TYPE_ERROR("not yet implemented type 'svc'");
+
+						break;
+					}
+
+					case RTC::RtpParameters::Type::PIPE:
+					{
+						// This may throw.
+						consumer = new RTC::PipeConsumer(consumerId, this, request->data);
 
 						break;
 					}

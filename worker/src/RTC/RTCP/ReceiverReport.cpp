@@ -37,13 +37,13 @@ namespace RTC
 			MS_TRACE();
 
 			MS_DEBUG_DEV("<ReceiverReport>");
-			MS_DEBUG_DEV("  ssrc          : %" PRIu32, this->GetSsrc());
-			MS_DEBUG_DEV("  fraction lost : %" PRIu32, this->GetFractionLost());
-			MS_DEBUG_DEV("  total lost    : %" PRIu32, this->GetTotalLost());
-			MS_DEBUG_DEV("  last seq      : %" PRIu32, this->GetLastSeq());
-			MS_DEBUG_DEV("  jitter        : %" PRIu32, this->GetJitter());
-			MS_DEBUG_DEV("  lsr           : %" PRIu32, this->GetLastSenderReport());
-			MS_DEBUG_DEV("  dlsr          : %" PRIu32, this->GetDelaySinceLastSenderReport());
+			MS_DEBUG_DEV("  ssrc          : %" PRIu32, GetSsrc());
+			MS_DEBUG_DEV("  fraction lost : %" PRIu8, GetFractionLost());
+			MS_DEBUG_DEV("  total lost    : %" PRIu32, GetTotalLost());
+			MS_DEBUG_DEV("  last seq      : %" PRIu32, GetLastSeq());
+			MS_DEBUG_DEV("  jitter        : %" PRIu32, GetJitter());
+			MS_DEBUG_DEV("  lsr           : %" PRIu32, GetLastSenderReport());
+			MS_DEBUG_DEV("  dlsr          : %" PRIu32, GetDelaySinceLastSenderReport());
 			MS_DEBUG_DEV("</ReceiverReport>");
 		}
 

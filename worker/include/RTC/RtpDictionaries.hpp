@@ -248,7 +248,8 @@ namespace RTC
 			NONE = 0,
 			SIMPLE,
 			SIMULCAST,
-			SVC
+			SVC,
+			PIPE
 		};
 
 	public:

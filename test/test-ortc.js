@@ -339,7 +339,7 @@ test('assertCapabilities() with incompatible codecs throws UnsupportedError', ()
 		.toThrow(UnsupportedError);
 });
 
-test('getProducerRtpParametersMapping(), getConsumableRtpParameters() and getConsumerRtpParameters() succeed', () =>
+test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsumerRtpParameters() and getPipeConsumerRtpParameters() succeed', () =>
 {
 	const mediaCodecs =
 	[
@@ -572,6 +572,7 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters() and getCon
 	const consumerRtpParameters =
 		ortc.getConsumerRtpParameters(consumableRtpParameters, remoteRtpCapabilities);
 
+	expect(consumerRtpParameters.codecs.length).toEqual(2);
 	expect(consumerRtpParameters.codecs[0]).toEqual(
 		{
 			name         : 'H264',
@@ -590,7 +591,6 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters() and getCon
 				'packetization-mode' : 1
 			}
 		});
-
 	expect(consumerRtpParameters.codecs[1]).toEqual(
 		{
 			name         : 'rtx',
@@ -622,6 +622,46 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters() and getCon
 		]);
 
 	expect(consumerRtpParameters.rtcp).toEqual(
+		{
+			cname       : rtpParameters.rtcp.cname,
+			reducedSize : true,
+			mux         : true
+		});
+
+	const pipeConsumerRtpParameters =
+		ortc.getPipeConsumerRtpParameters(consumableRtpParameters);
+
+	expect(pipeConsumerRtpParameters.codecs.length).toEqual(1);
+	expect(pipeConsumerRtpParameters.codecs[0]).toEqual(
+		{
+			name         : 'H264',
+			mimeType     : 'video/H264',
+			payloadType  : 101,
+			clockRate    : 90000,
+			rtcpFeedback :
+			[
+				{ type: 'nack', parameter: 'pli' },
+				{ type: 'ccm', parameter: 'fir' }
+			],
+			parameters :
+			{
+				foo                  : 1234,
+				'packetization-mode' : 1
+			}
+		});
+
+	expect(pipeConsumerRtpParameters.encodings.length).toBe(3);
+	expect(pipeConsumerRtpParameters.encodings[0].ssrc).toBeType('number');
+	expect(pipeConsumerRtpParameters.encodings[0].rtx).toBe(undefined);
+	expect(pipeConsumerRtpParameters.encodings[0].maxBitrate).toBeType('number');
+	expect(pipeConsumerRtpParameters.encodings[1].ssrc).toBeType('number');
+	expect(pipeConsumerRtpParameters.encodings[1].rtx).toBe(undefined);
+	expect(pipeConsumerRtpParameters.encodings[1].maxBitrate).toBeType('number');
+	expect(pipeConsumerRtpParameters.encodings[2].ssrc).toBeType('number');
+	expect(pipeConsumerRtpParameters.encodings[2].rtx).toBe(undefined);
+	expect(pipeConsumerRtpParameters.encodings[2].maxBitrate).toBeType('number');
+
+	expect(pipeConsumerRtpParameters.rtcp).toEqual(
 		{
 			cname       : rtpParameters.rtcp.cname,
 			reducedSize : true,
