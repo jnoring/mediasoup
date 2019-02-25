@@ -122,7 +122,6 @@ namespace RTC
 		struct RTC::RtpHeaderExtensionIds rtpHeaderExtensionIds;
 		uint32_t availableIncomingBitrate{ 0 };
 		uint32_t availableOutgoingBitrate{ 0 };
-		uint32_t maxIncomingBitrate{ 0 };
 
 	private:
 		// Passed by argument.

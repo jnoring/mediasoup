@@ -118,6 +118,7 @@ namespace RTC
 		RTC::TransportTuple* iceSelectedTuple{ nullptr };
 		RTC::DtlsTransport::Role dtlsRole{ RTC::DtlsTransport::Role::AUTO };
 		std::unique_ptr<RTC::REMB::RemoteBitrateEstimatorAbsSendTime> rembRemoteBitrateEstimator;
+		uint32_t maxIncomingBitrate{ 0 };
 	};
 } // namespace RTC
 

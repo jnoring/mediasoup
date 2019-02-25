@@ -237,10 +237,6 @@ test('PlaintRtpTransport methods reject if closed', async () =>
 	await expect(transport.connect())
 		.rejects
 		.toThrow(Error);
-
-	await expect(transport.setMaxIncomingBitrate())
-		.rejects
-		.toThrow(Error);
 }, 2000);
 
 test('PlaintRtpTransport emits "routerclose" if Router is closed', async () =>
