@@ -864,7 +864,7 @@ namespace RTC
 					rate += consumer->GetTransmissionRate(now) / 1000;
 				}
 
-				// Calculate bandwidth: 360 / transmission bandwidth in kbit/s
+				// Calculate bandwidth: 360 / transmission bandwidth in kbit/s.
 				if (rate != 0u)
 					interval = 360000 / rate;
 
