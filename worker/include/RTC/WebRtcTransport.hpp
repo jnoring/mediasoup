@@ -44,11 +44,9 @@ namespace RTC
 		bool IsConnected() const override;
 		void MayRunDtlsTransport();
 		void SendRtpPacket(RTC::RtpPacket* packet) override;
+		void SendRtcp(uint64_t now) override;
 		void SendRtcpPacket(RTC::RTCP::Packet* packet) override;
 		void SendRtcpCompoundPacket(RTC::RTCP::CompoundPacket* packet) override;
-
-		/* Private methods to unify UDP and TCP behavior. */
-	private:
 		void OnPacketRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len);
 		void OnStunDataRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len);
 		void OnDtlsDataRecv(const RTC::TransportTuple* tuple, const uint8_t* data, size_t len);

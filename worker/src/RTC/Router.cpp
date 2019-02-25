@@ -6,6 +6,7 @@
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
 #include "RTC/AudioLevelObserver.hpp"
+#include "RTC/PipeTransport.hpp"
 #include "RTC/PlainRtpTransport.hpp"
 #include "RTC/WebRtcTransport.hpp"
 
@@ -183,6 +184,29 @@ namespace RTC
 				json data(json::object());
 
 				plainRtpTransport->FillJson(data);
+
+				request->Accept(data);
+
+				break;
+			}
+
+			case Channel::Request::MethodId::ROUTER_CREATE_PIPE_TRANSPORT:
+			{
+				std::string transportId;
+
+				// This may throw
+				SetNewTransportIdFromRequest(request, transportId);
+
+				auto* pipeTransport = new RTC::PipeTransport(transportId, this, request->data);
+
+				// Insert into the map.
+				this->mapTransports[transportId] = pipeTransport;
+
+				MS_DEBUG_DEV("PipeTransport created [transportId:%s]", transportId.c_str());
+
+				json data(json::object());
+
+				pipeTransport->FillJson(data);
 
 				request->Accept(data);
 
@@ -608,10 +632,6 @@ namespace RTC
 		MS_ASSERT(
 		  this->mapConsumerProducer.find(consumer) == this->mapConsumerProducer.end(),
 		  "Consumer already present in mapConsumerProducer");
-
-		// Verify that Producer and Consumer types match.
-		if (consumer->GetType() != producer->GetType())
-			MS_THROW_ERROR("Consumer and Producer types do not match");
 
 		// Get all streams in the Producer and provide the Consumer with them.
 		for (auto& kv : producer->GetRtpStreams())

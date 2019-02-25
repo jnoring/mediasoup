@@ -1,5 +1,5 @@
-#ifndef MS_RTC_PLAIN_RTP_TRANSPORT_HPP
-#define MS_RTC_PLAIN_RTP_TRANSPORT_HPP
+#ifndef MS_RTC_PIPE_TRANSPORT_HPP
+#define MS_RTC_PIPE_TRANSPORT_HPP
 
 #include "RTC/Transport.hpp"
 #include "RTC/TransportTuple.hpp"
@@ -7,7 +7,7 @@
 
 namespace RTC
 {
-	class PlainRtpTransport : public RTC::Transport, public RTC::UdpSocket::Listener
+	class PipeTransport : public RTC::Transport, public RTC::UdpSocket::Listener
 	{
 	private:
 		struct ListenIp
@@ -17,8 +17,8 @@ namespace RTC
 		};
 
 	public:
-		PlainRtpTransport(const std::string& id, RTC::Transport::Listener* listener, json& data);
-		~PlainRtpTransport() override;
+		PipeTransport(const std::string& id, RTC::Transport::Listener* listener, json& data);
+		~PipeTransport() override;
 
 	public:
 		void FillJson(json& jsonObject) const override;
@@ -43,14 +43,10 @@ namespace RTC
 	private:
 		// Allocated by this.
 		RTC::UdpSocket* udpSocket{ nullptr };
-		RTC::UdpSocket* rtcpUdpSocket{ nullptr };
 		RTC::TransportTuple* tuple{ nullptr };
-		RTC::TransportTuple* rtcpTuple{ nullptr };
 		// Others.
 		ListenIp listenIp;
-		bool rtcpMux{ true };
 		struct sockaddr_storage remoteAddrStorage;
-		struct sockaddr_storage rtcpRemoteAddrStorage;
 	};
 } // namespace RTC
 

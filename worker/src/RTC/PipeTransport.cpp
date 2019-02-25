@@ -1,7 +1,7 @@
-#define MS_CLASS "RTC::PlainRtpTransport"
+#define MS_CLASS "RTC::PipeTransport"
 // #define MS_LOG_DEV
 
-#include "RTC/PlainRtpTransport.hpp"
+#include "RTC/PipeTransport.hpp"
 #include "DepLibUV.hpp"
 #include "Logger.hpp"
 #include "MediaSoupErrors.hpp"
@@ -12,8 +12,7 @@ namespace RTC
 	/* Instance methods. */
 
 	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-	PlainRtpTransport::PlainRtpTransport(
-	  const std::string& id, RTC::Transport::Listener* listener, json& data)
+	PipeTransport::PipeTransport(const std::string& id, RTC::Transport::Listener* listener, json& data)
 	  : RTC::Transport::Transport(id, listener)
 	{
 		MS_TRACE();
@@ -47,26 +46,10 @@ namespace RTC
 			this->listenIp.announcedIp.assign(jsonAnnouncedIpIt->get<std::string>());
 		}
 
-		auto jsonRtcpMuxIt = data.find("rtcpMux");
-
-		if (jsonRtcpMuxIt != data.end())
-		{
-			if (!jsonRtcpMuxIt->is_boolean())
-				MS_THROW_TYPE_ERROR("wrong rtcpMux (not a boolean)");
-
-			this->rtcpMux = jsonRtcpMuxIt->get<bool>();
-		}
-
 		try
 		{
 			// This may throw.
 			this->udpSocket = new RTC::UdpSocket(this, this->listenIp.ip);
-
-			if (!this->rtcpMux)
-			{
-				// This may throw.
-				this->rtcpUdpSocket = new RTC::UdpSocket(this, this->listenIp.ip);
-			}
 		}
 		catch (const MediaSoupError& error)
 		{
@@ -77,27 +60,20 @@ namespace RTC
 			delete this->udpSocket;
 			this->udpSocket = nullptr;
 
-			delete this->rtcpUdpSocket;
-			this->rtcpUdpSocket = nullptr;
-
 			throw;
 		}
 	}
 
-	PlainRtpTransport::~PlainRtpTransport()
+	PipeTransport::~PipeTransport()
 	{
 		MS_TRACE();
 
 		delete this->udpSocket;
 
-		delete this->rtcpUdpSocket;
-
 		delete this->tuple;
-
-		delete this->rtcpTuple;
 	}
 
-	void PlainRtpTransport::FillJson(json& jsonObject) const
+	void PipeTransport::FillJson(json& jsonObject) const
 	{
 		MS_TRACE();
 
@@ -123,46 +99,11 @@ namespace RTC
 			(*jsonTupleIt)["protocol"]  = "udp";
 		}
 
-		// Add rtcpTuple.
-		if (!this->rtcpMux)
-		{
-			if (this->rtcpTuple != nullptr)
-			{
-				this->rtcpTuple->FillJson(jsonObject["rtcpTuple"]);
-			}
-			else
-			{
-				jsonObject["rtcpTuple"] = json::object();
-				auto jsonRtcpTupleIt    = jsonObject.find("rtcpTuple");
-
-				if (this->listenIp.announcedIp.empty())
-					(*jsonRtcpTupleIt)["localIp"] = this->rtcpUdpSocket->GetLocalIp();
-				else
-					(*jsonRtcpTupleIt)["localIp"] = this->listenIp.announcedIp;
-
-				(*jsonRtcpTupleIt)["localPort"] = this->rtcpUdpSocket->GetLocalPort();
-				(*jsonRtcpTupleIt)["protocol"]  = "udp";
-			}
-		}
-
-		// Add headerExtensionIds.
-		jsonObject["rtpHeaderExtensions"] = json::object();
-		auto jsonRtpHeaderExtensionsIt    = jsonObject.find("rtpHeaderExtensions");
-
-		if (this->rtpHeaderExtensionIds.absSendTime != 0u)
-			(*jsonRtpHeaderExtensionsIt)["absSendTime"] = this->rtpHeaderExtensionIds.absSendTime;
-
-		if (this->rtpHeaderExtensionIds.mid != 0u)
-			(*jsonRtpHeaderExtensionsIt)["mid"] = this->rtpHeaderExtensionIds.mid;
-
-		if (this->rtpHeaderExtensionIds.rid != 0u)
-			(*jsonRtpHeaderExtensionsIt)["rid"] = this->rtpHeaderExtensionIds.rid;
-
 		// Add rtpListener.
 		this->rtpListener.FillJson(jsonObject["rtpListener"]);
 	}
 
-	void PlainRtpTransport::FillJsonStats(json& jsonArray) const
+	void PipeTransport::FillJsonStats(json& jsonArray) const
 	{
 		MS_TRACE();
 
@@ -193,13 +134,9 @@ namespace RTC
 			// Add bytesSent.
 			jsonObject["bytesSent"] = 0;
 		}
-
-		// Add rtcpTuple.
-		if (!this->rtcpMux && this->rtcpTuple != nullptr)
-			this->rtcpTuple->FillJson(jsonObject["rtcpTuple"]);
 	}
 
-	void PlainRtpTransport::HandleRequest(Channel::Request* request)
+	void PipeTransport::HandleRequest(Channel::Request* request)
 	{
 		MS_TRACE();
 
@@ -215,7 +152,6 @@ namespace RTC
 				{
 					std::string ip;
 					uint16_t port{ 0u };
-					uint16_t rtcpPort{ 0u };
 
 					auto jsonIpIt = request->data.find("ip");
 
@@ -233,21 +169,6 @@ namespace RTC
 						MS_THROW_TYPE_ERROR("missing port");
 
 					port = jsonPortIt->get<uint16_t>();
-
-					auto jsonRtcpPortIt = request->data.find("rtcpPort");
-
-					if (jsonRtcpPortIt != request->data.end() && jsonRtcpPortIt->is_number_unsigned())
-					{
-						if (this->rtcpMux)
-							MS_THROW_TYPE_ERROR("cannot set rtcpPort with rtcpMux enabled");
-
-						rtcpPort = jsonRtcpPortIt->get<uint16_t>();
-					}
-					else if (jsonRtcpPortIt == request->data.end() || !jsonRtcpPortIt->is_number_unsigned())
-					{
-						if (!this->rtcpMux)
-							MS_THROW_TYPE_ERROR("missing rtcpPort (required with rtcpMux disabled)");
-					}
 
 					int err;
 
@@ -291,50 +212,6 @@ namespace RTC
 
 					if (!this->listenIp.announcedIp.empty())
 						this->tuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
-
-					if (!this->rtcpMux)
-					{
-						switch (Utils::IP::GetFamily(ip))
-						{
-							case AF_INET:
-							{
-								err = uv_ip4_addr(
-								  ip.c_str(),
-								  static_cast<int>(rtcpPort),
-								  reinterpret_cast<struct sockaddr_in*>(&this->rtcpRemoteAddrStorage));
-
-								if (err != 0)
-									MS_ABORT("uv_ip4_addr() failed: %s", uv_strerror(err));
-
-								break;
-							}
-
-							case AF_INET6:
-							{
-								err = uv_ip6_addr(
-								  ip.c_str(),
-								  static_cast<int>(rtcpPort),
-								  reinterpret_cast<struct sockaddr_in6*>(&this->rtcpRemoteAddrStorage));
-
-								if (err != 0)
-									MS_ABORT("uv_ip6_addr() failed: %s", uv_strerror(err));
-
-								break;
-							}
-
-							default:
-							{
-								MS_THROW_ERROR("invalid IP '%s'", ip.c_str());
-							}
-						}
-
-						// Create the tuple.
-						this->rtcpTuple = new RTC::TransportTuple(
-						  this->rtcpUdpSocket, reinterpret_cast<struct sockaddr*>(&this->rtcpRemoteAddrStorage));
-
-						if (!this->listenIp.announcedIp.empty())
-							this->rtcpTuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
-					}
 				}
 				catch (const MediaSoupError& error)
 				{
@@ -344,12 +221,6 @@ namespace RTC
 						this->tuple = nullptr;
 					}
 
-					if (this->rtcpTuple != nullptr)
-					{
-						delete this->rtcpTuple;
-						this->rtcpTuple = nullptr;
-					}
-
 					throw;
 				}
 
@@ -357,9 +228,6 @@ namespace RTC
 				json data(json::object());
 
 				this->tuple->FillJson(data["tuple"]);
-
-				if (!this->rtcpMux)
-					this->rtcpTuple->FillJson(data["rtcpTuple"]);
 
 				request->Accept(data);
 
@@ -378,12 +246,12 @@ namespace RTC
 		}
 	}
 
-	inline bool PlainRtpTransport::IsConnected() const
+	inline bool PipeTransport::IsConnected() const
 	{
 		return this->tuple != nullptr;
 	}
 
-	void PlainRtpTransport::SendRtpPacket(RTC::RtpPacket* packet)
+	void PipeTransport::SendRtpPacket(RTC::RtpPacket* packet)
 	{
 		MS_TRACE();
 
@@ -396,40 +264,15 @@ namespace RTC
 		this->tuple->Send(data, len);
 	}
 
-	void PlainRtpTransport::SendRtcp(uint64_t now)
+	void PipeTransport::SendRtcp(uint64_t now)
 	{
 		MS_TRACE();
 
 		// - Create a CompoundPacket.
-		// - Request every Consumer and Producer their RTCP data.
+		// - Request every Producer their RTCP data.
 		// - Send the CompoundPacket.
 
 		std::unique_ptr<RTC::RTCP::CompoundPacket> packet(new RTC::RTCP::CompoundPacket());
-
-		for (auto& kv : this->mapConsumers)
-		{
-			auto* consumer = kv.second;
-
-			consumer->GetRtcp(packet.get(), now);
-
-			// Send the RTCP compound packet if there is a sender report.
-			if (packet->HasSenderReport())
-			{
-				// Ensure that the RTCP packet fits into the RTCP buffer.
-				if (packet->GetSize() > RTC::RTCP::BufferSize)
-				{
-					MS_WARN_TAG(rtcp, "cannot send RTCP packet, size too big (%zu bytes)", packet->GetSize());
-
-					return;
-				}
-
-				packet->Serialize(RTC::RTCP::Buffer);
-				SendRtcpCompoundPacket(packet.get());
-
-				// Reset the Compound packet.
-				packet.reset(new RTC::RTCP::CompoundPacket());
-			}
-		}
 
 		for (auto& kv : this->mapProducers)
 		{
@@ -454,7 +297,7 @@ namespace RTC
 		}
 	}
 
-	void PlainRtpTransport::SendRtcpPacket(RTC::RTCP::Packet* packet)
+	void PipeTransport::SendRtcpPacket(RTC::RTCP::Packet* packet)
 	{
 		MS_TRACE();
 
@@ -464,13 +307,10 @@ namespace RTC
 		const uint8_t* data = packet->GetData();
 		size_t len          = packet->GetSize();
 
-		if (this->rtcpMux)
-			this->tuple->Send(data, len);
-		else
-			this->rtcpTuple->Send(data, len);
+		this->tuple->Send(data, len);
 	}
 
-	void PlainRtpTransport::SendRtcpCompoundPacket(RTC::RTCP::CompoundPacket* packet)
+	void PipeTransport::SendRtcpCompoundPacket(RTC::RTCP::CompoundPacket* packet)
 	{
 		MS_TRACE();
 
@@ -480,13 +320,10 @@ namespace RTC
 		const uint8_t* data = packet->GetData();
 		size_t len          = packet->GetSize();
 
-		if (this->rtcpMux)
-			this->tuple->Send(data, len);
-		else
-			this->rtcpTuple->Send(data, len);
+		this->tuple->Send(data, len);
 	}
 
-	inline void PlainRtpTransport::OnPacketRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
+	inline void PipeTransport::OnPacketRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
 
@@ -506,8 +343,7 @@ namespace RTC
 		}
 	}
 
-	inline void PlainRtpTransport::OnRtpDataRecv(
-	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
+	inline void PipeTransport::OnRtpDataRecv(RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
 
@@ -519,11 +355,6 @@ namespace RTC
 
 			return;
 		}
-
-		// Apply the Transport RTP header extension ids so the RTP listener can use them.
-		packet->SetAbsSendTimeExtensionId(this->rtpHeaderExtensionIds.absSendTime);
-		packet->SetMidExtensionId(this->rtpHeaderExtensionIds.mid);
-		packet->SetRidExtensionId(this->rtpHeaderExtensionIds.rid);
 
 		// Get the associated Producer.
 		RTC::Producer* producer = this->rtpListener.GetProducer(packet);
@@ -553,7 +384,7 @@ namespace RTC
 		delete packet;
 	}
 
-	inline void PlainRtpTransport::OnRtcpDataRecv(
+	inline void PipeTransport::OnRtcpDataRecv(
 	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
@@ -579,7 +410,7 @@ namespace RTC
 		}
 	}
 
-	inline void PlainRtpTransport::OnPacketRecv(
+	inline void PipeTransport::OnPacketRecv(
 	  RTC::UdpSocket* socket, const uint8_t* data, size_t len, const struct sockaddr* remoteAddr)
 	{
 		MS_TRACE();

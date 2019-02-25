@@ -83,9 +83,9 @@ namespace RTC
 		void SetNewConsumerIdFromRequest(Channel::Request* request, std::string& consumerId) const;
 		RTC::Consumer* GetConsumerFromRequest(Channel::Request* request) const;
 		RTC::Consumer* GetConsumerByMediaSsrc(uint32_t ssrc) const;
-		void SendRtcp(uint64_t now);
 		virtual bool IsConnected() const                                       = 0;
 		virtual void SendRtpPacket(RTC::RtpPacket* packet)                     = 0;
+		virtual void SendRtcp(uint64_t now)                                    = 0;
 		virtual void SendRtcpPacket(RTC::RTCP::Packet* packet)                 = 0;
 		virtual void SendRtcpCompoundPacket(RTC::RTCP::CompoundPacket* packet) = 0;
 
@@ -117,6 +117,9 @@ namespace RTC
 		const std::string id;
 
 	protected:
+		// Allocated by this.
+		std::unordered_map<std::string, RTC::Producer*> mapProducers;
+		std::unordered_map<std::string, RTC::Consumer*> mapConsumers;
 		// Others.
 		RtpListener rtpListener;
 		struct RTC::RtpHeaderExtensionIds rtpHeaderExtensionIds;
@@ -127,8 +130,6 @@ namespace RTC
 		// Passed by argument.
 		Listener* listener{ nullptr };
 		// Allocated by this.
-		std::unordered_map<std::string, RTC::Producer*> mapProducers;
-		std::unordered_map<std::string, RTC::Consumer*> mapConsumers;
 		std::unordered_map<uint32_t, RTC::Consumer*> mapSsrcConsumer;
 		Timer* rtcpTimer{ nullptr };
 	};
