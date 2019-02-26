@@ -60,7 +60,7 @@ namespace RTC
 			{
 				case json::value_t::boolean:
 				{
-					this->mapKeyValues.emplace(key, value.get<bool>());
+					this->mapKeyValues.emplace(key, Value(value.get<bool>()));
 
 					break;
 				}
@@ -68,21 +68,21 @@ namespace RTC
 				case json::value_t::number_integer:
 				case json::value_t::number_unsigned:
 				{
-					this->mapKeyValues.emplace(key, value.get<int32_t>());
+					this->mapKeyValues.emplace(key, Value(value.get<int32_t>()));
 
 					break;
 				}
 
 				case json::value_t::number_float:
 				{
-					this->mapKeyValues.emplace(key, value.get<double>());
+					this->mapKeyValues.emplace(key, Value(value.get<double>()));
 
 					break;
 				}
 
 				case json::value_t::string:
 				{
-					this->mapKeyValues.emplace(key, value.get<std::string>());
+					this->mapKeyValues.emplace(key, Value(value.get<std::string>()));
 
 					break;
 				}
@@ -105,7 +105,7 @@ namespace RTC
 					}
 
 					if (!arrayOfIntegers.empty() && isValid)
-						this->mapKeyValues.emplace(key, arrayOfIntegers);
+						this->mapKeyValues.emplace(key, Value(arrayOfIntegers));
 
 					break;
 				}
