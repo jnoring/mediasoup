@@ -659,8 +659,8 @@ namespace RTC
 
 		// NOTE:
 		// This callback is called when the Consumer has been closed but its Produer
-		// remains alive, so the entry in mapProducerConsumers still exists exists
-		// and must be removed.
+		// remains alive, so the entry in mapProducerConsumers still exists and must
+		// be removed.
 
 		auto mapConsumerProducerIt = this->mapConsumerProducer.find(consumer);
 
@@ -709,8 +709,7 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		auto mapConsumerProducerIt = this->mapConsumerProducer.find(consumer);
-		auto* producer             = mapConsumerProducerIt->second;
+		auto* producer = this->mapConsumerProducer.at(consumer);
 
 		producer->RequestKeyFrame(mappedSsrc);
 	}

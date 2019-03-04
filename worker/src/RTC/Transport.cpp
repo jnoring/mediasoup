@@ -123,6 +123,18 @@ namespace RTC
 
 			jsonConsumerIdsIt->emplace_back(consumerId);
 		}
+
+		// Add mapSsrcConsumerId.
+		jsonObject["mapSsrcConsumerId"] = json::object();
+		auto jsonMapSsrcConsumerId      = jsonObject.find("mapSsrcConsumerId");
+
+		for (auto& kv : this->mapSsrcConsumer)
+		{
+			auto ssrc      = kv.first;
+			auto* consumer = kv.second;
+
+			(*jsonMapSsrcConsumerId)[std::to_string(ssrc)] = consumer->id;
+		}
 	}
 
 	void Transport::HandleRequest(Channel::Request* request)
