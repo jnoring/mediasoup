@@ -645,7 +645,7 @@ namespace RTC
 
 		// Get all streams in the Producer and provide the Consumer with them.
 		// NOTE: This must be done at the end. Otherwise, if consumer->ProducerNewRtpStream()
-		// invikes Router::OnTransportConsumerKeyFrameRequested(), it would crash due to
+		// invokes Router::OnTransportConsumerKeyFrameRequested(), it would crash due to
 		// Consumer still not being present in Router maps.
 		for (auto& kv : producer->GetRtpStreams())
 		{
