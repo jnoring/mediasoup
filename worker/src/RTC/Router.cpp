@@ -633,15 +633,6 @@ namespace RTC
 		  this->mapConsumerProducer.find(consumer) == this->mapConsumerProducer.end(),
 		  "Consumer already present in mapConsumerProducer");
 
-		// Get all streams in the Producer and provide the Consumer with them.
-		for (auto& kv : producer->GetRtpStreams())
-		{
-			auto* rtpStream     = kv.first;
-			uint32_t mappedSsrc = kv.second;
-
-			consumer->ProducerNewRtpStream(rtpStream, mappedSsrc);
-		}
-
 		// Update the Consumer status based on the Producer status.
 		if (producer->IsPaused())
 			consumer->ProducerPaused();
@@ -651,6 +642,18 @@ namespace RTC
 
 		consumers.insert(consumer);
 		this->mapConsumerProducer[consumer] = producer;
+
+		// Get all streams in the Producer and provide the Consumer with them.
+		// NOTE: This must be done at the end. Otherwise, if consumer->ProducerNewRtpStream()
+		// invikes Router::OnTransportConsumerKeyFrameRequested(), it would crash due to
+		// Consumer still not being present in Router maps.
+		for (auto& kv : producer->GetRtpStreams())
+		{
+			auto* rtpStream     = kv.first;
+			uint32_t mappedSsrc = kv.second;
+
+			consumer->ProducerNewRtpStream(rtpStream, mappedSsrc);
+		}
 	}
 
 	inline void Router::OnTransportConsumerClosed(RTC::Transport* /*transport*/, RTC::Consumer* consumer)
