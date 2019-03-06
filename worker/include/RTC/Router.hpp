@@ -46,11 +46,6 @@ namespace RTC
 		  RTC::Producer* producer,
 		  RTC::RtpStream* rtpStream,
 		  uint32_t mappedSsrc) override;
-		void OnTransportProducerRtpStreamScore(
-		  RTC::Transport* transport,
-		  RTC::Producer* producer,
-		  RTC::RtpStream* rtpStream,
-		  uint8_t score) override;
 		void OnTransportProducerRtpPacketReceived(
 		  RTC::Transport* transport, RTC::Producer* producer, RTC::RtpPacket* packet) override;
 		void OnTransportNeedWorstRemoteFractionLost(
@@ -58,8 +53,11 @@ namespace RTC
 		  RTC::Producer* producer,
 		  uint32_t mappedSsrc,
 		  uint8_t& worstRemoteFractionLost) override;
-		void OnTransportProducerCname(
-		  RTC::Transport* transport, RTC::Producer* producer, std::string& cname) override;
+		void OnTransportProducerRtpStreamScore(
+		  RTC::Transport* transport,
+		  RTC::Producer* producer,
+		  RTC::RtpStream* rtpStream,
+		  uint8_t score) override;
 		void OnTransportNewConsumer(
 		  RTC::Transport* transport, RTC::Consumer* consumer, std::string& producerId) override;
 		void OnTransportConsumerClosed(RTC::Transport* transport, RTC::Consumer* consumer) override;

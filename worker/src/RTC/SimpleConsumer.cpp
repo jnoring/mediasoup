@@ -124,17 +124,6 @@ namespace RTC
 		EmitScore();
 	}
 
-	void SimpleConsumer::ProducerCname(std::string& cname)
-	{
-		MS_TRACE();
-
-		if (cname == this->rtpParameters.rtcp.cname)
-			return;
-
-		this->rtpParameters.rtcp.cname = cname;
-		this->rtpStream->SetCname(cname);
-	}
-
 	void SimpleConsumer::SendRtpPacket(RTC::RtpPacket* packet)
 	{
 		MS_TRACE();
@@ -275,8 +264,7 @@ namespace RTC
 		// Build SDES chunk for this sender.
 		auto* sdesChunk = this->rtpStream->GetRtcpSdesChunk();
 
-		if (sdesChunk)
-			packet->AddSdesChunk(sdesChunk);
+		packet->AddSdesChunk(sdesChunk);
 
 		this->lastRtcpSentTime = now;
 	}

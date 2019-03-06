@@ -14,8 +14,6 @@
 #include "RTC/RTCP/FeedbackRtp.hpp"
 #include "RTC/RTCP/FeedbackRtpNack.hpp"
 #include "RTC/RTCP/ReceiverReport.hpp"
-#include "RTC/RTCP/Sdes.hpp"
-#include "RTC/RTCP/SenderReport.hpp"
 #include "RTC/RtpDictionaries.hpp"
 #include "RTC/SimpleConsumer.hpp"
 #include "RTC/SimulcastConsumer.hpp"
@@ -640,8 +638,6 @@ namespace RTC
 
 						continue;
 					}
-
-					producer->ReceiveRtcpSdesChunk(chunk);
 				}
 
 				break;
@@ -797,13 +793,6 @@ namespace RTC
 
 		this->listener->OnTransportNeedWorstRemoteFractionLost(
 		  this, producer, mappedSsrc, worstRemoteFractionLost);
-	}
-
-	inline void Transport::OnProducerCname(RTC::Producer* producer, std::string& cname)
-	{
-		MS_TRACE();
-
-		this->listener->OnTransportProducerCname(this, producer, cname);
 	}
 
 	inline void Transport::OnConsumerSendRtpPacket(RTC::Consumer* /*consumer*/, RTC::RtpPacket* packet)

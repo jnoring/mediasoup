@@ -48,8 +48,6 @@ namespace RTC
 			  RTC::Producer* producer,
 			  uint32_t mappedSsrc,
 			  uint8_t& worstRemoteFractionLost) = 0;
-			virtual void OnTransportProducerCname(
-			  RTC::Transport* transport, RTC::Producer* producer, std::string& cname) = 0;
 			virtual void OnTransportNewConsumer(
 			  RTC::Transport* transport, RTC::Consumer* consumer, std::string& producerId) = 0;
 			virtual void OnTransportConsumerClosed(RTC::Transport* transport, RTC::Consumer* consumer) = 0;
@@ -103,7 +101,6 @@ namespace RTC
 		void OnProducerSendRtcpPacket(RTC::Producer* producer, RTC::RTCP::Packet* packet) override;
 		void OnProducerNeedWorstRemoteFractionLost(
 		  RTC::Producer* producer, uint32_t mappedSsrc, uint8_t& worstRemoteFractionLost) override;
-		void OnProducerCname(RTC::Producer* producer, std::string& cname) override;
 
 		/* Pure virtual methods inherited from RTC::Consumer::Listener. */
 	public:

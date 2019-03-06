@@ -86,13 +86,6 @@ namespace RTC
 		// Do nothing.
 	}
 
-	void PipeConsumer::ProducerCname(std::string& cname)
-	{
-		MS_TRACE();
-
-		this->rtpParameters.rtcp.cname = cname;
-	}
-
 	void PipeConsumer::SendRtpPacket(RTC::RtpPacket* packet)
 	{
 		MS_TRACE();

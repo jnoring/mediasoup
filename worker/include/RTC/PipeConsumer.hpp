@@ -19,7 +19,6 @@ namespace RTC
 		void TransportConnected() override;
 		void ProducerNewRtpStream(RTC::RtpStream* rtpStream, uint32_t mappedSsrc) override;
 		void ProducerRtpStreamScore(RTC::RtpStream* rtpStream, uint8_t score) override;
-		void ProducerCname(std::string& cname) override;
 		void SendRtpPacket(RTC::RtpPacket* packet) override;
 		void GetRtcp(RTC::RTCP::CompoundPacket* packet, uint64_t now) override;
 		void NeedWorstRemoteFractionLost(uint32_t mappedSsrc, uint8_t& worstRemoteFractionLost) override;

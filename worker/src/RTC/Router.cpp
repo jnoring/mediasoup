@@ -613,19 +613,6 @@ namespace RTC
 		}
 	}
 
-	inline void Router::OnTransportProducerCname(
-	  RTC::Transport* /*transport*/, RTC::Producer* producer, std::string& cname)
-	{
-		MS_TRACE();
-
-		auto& consumers = this->mapProducerConsumers.at(producer);
-
-		for (auto* consumer : consumers)
-		{
-			consumer->ProducerCname(cname);
-		}
-	}
-
 	inline void Router::OnTransportNewConsumer(
 	  RTC::Transport* /*transport*/, RTC::Consumer* consumer, std::string& producerId)
 	{
