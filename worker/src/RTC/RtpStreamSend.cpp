@@ -178,7 +178,11 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		auto& cname     = GetCname();
+		auto& cname = GetCname();
+
+		if (cname.empty())
+			return nullptr;
+
 		auto* sdesChunk = new RTC::RTCP::SdesChunk(GetSsrc());
 		auto* sdesItem =
 		  new RTC::RTCP::SdesItem(RTC::RTCP::SdesItem::Type::CNAME, cname.size(), cname.c_str());

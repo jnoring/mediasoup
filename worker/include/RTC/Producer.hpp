@@ -7,6 +7,7 @@
 #include "RTC/KeyFrameRequestManager.hpp"
 #include "RTC/RTCP/CompoundPacket.hpp"
 #include "RTC/RTCP/Packet.hpp"
+#include "RTC/RTCP/Sdes.hpp"
 #include "RTC/RTCP/SenderReport.hpp"
 #include "RTC/RtpDictionaries.hpp"
 #include "RTC/RtpHeaderExtensionIds.hpp"
@@ -35,6 +36,7 @@ namespace RTC
 			virtual void OnProducerSendRtcpPacket(RTC::Producer* producer, RTC::RTCP::Packet* packet) = 0;
 			virtual void OnProducerNeedWorstRemoteFractionLost(
 			  RTC::Producer* producer, uint32_t mappedSsrc, uint8_t& worstRemoteFractionLost) = 0;
+			virtual void OnProducerCname(RTC::Producer* producer, std::string& cname)         = 0;
 		};
 
 	private:
@@ -69,6 +71,7 @@ namespace RTC
 		std::map<RTC::RtpStreamRecv*, uint32_t>& GetRtpStreams();
 		void ReceiveRtpPacket(RTC::RtpPacket* packet);
 		void ReceiveRtcpSenderReport(RTC::RTCP::SenderReport* report);
+		void ReceiveRtcpSdesChunk(RTC::RTCP::SdesChunk* chunk);
 		void GetRtcp(RTC::RTCP::CompoundPacket* packet, uint64_t now);
 		void RequestKeyFrame(uint32_t mappedSsrc);
 

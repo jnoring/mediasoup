@@ -63,6 +63,7 @@ namespace RTC
 		const std::string& GetCname() const;
 		bool HasRtx() const;
 		virtual void SetRtx(uint8_t payloadType, uint32_t ssrc);
+		void SetCname(std::string& cname);
 		uint32_t GetRtxSsrc() const;
 		uint8_t GetRtxPayloadType() const;
 		virtual bool ReceivePacket(RTC::RtpPacket* packet);
@@ -163,6 +164,11 @@ namespace RTC
 	{
 		this->params.rtxPayloadType = payloadType;
 		this->params.rtxSsrc        = ssrc;
+	}
+
+	inline void RtpStream::SetCname(std::string& cname)
+	{
+		this->params.cname = cname;
 	}
 
 	inline uint32_t RtpStream::GetRtxSsrc() const

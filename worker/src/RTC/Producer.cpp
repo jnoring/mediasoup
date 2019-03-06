@@ -532,6 +532,36 @@ namespace RTC
 		rtpStream->ReceiveRtcpSenderReport(report);
 	}
 
+	void Producer::ReceiveRtcpSdesChunk(RTC::RTCP::SdesChunk* chunk)
+	{
+		MS_TRACE();
+
+		for (auto it = chunk->Begin(); it != chunk->End(); ++it)
+		{
+			auto& item = (*it);
+
+			if (item->GetType() == RTC::RTCP::SdesItem::Type::CNAME)
+			{
+				// Ignore if empty CNAME.
+				if (item->GetLength() == 0)
+					continue;
+
+				std::string cname(item->GetValue(), item->GetLength());
+
+				if (this->rtpParameters.rtcp.cname.empty())
+				{
+					MS_DEBUG_TAG(rtcp, "got CNAME: %s", cname.c_str());
+
+					this->rtpParameters.rtcp.cname = cname;
+				}
+
+				// Anyway, announce it to Consumers since, otherwise, new Consumers
+				// would not know about it.
+				this->listener->OnProducerCname(this, cname);
+			}
+		}
+	}
+
 	void Producer::GetRtcp(RTC::RTCP::CompoundPacket* packet, uint64_t now)
 	{
 		MS_TRACE();
