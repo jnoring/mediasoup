@@ -84,7 +84,7 @@ const audioProducerParameters =
 		encodings : [ { ssrc: 11111111 } ],
 		rtcp      :
 		{
-			cname : 'audio-1'
+			cname : 'FOOBAR'
 		}
 	},
 	appData : { foo: 1, bar: '2' }
@@ -143,7 +143,7 @@ const videoProducerParameters =
 		],
 		rtcp :
 		{
-			cname : 'video-1'
+			cname : 'FOOBAR'
 		}
 	},
 	appData : { foo: 1, bar: '2' }
