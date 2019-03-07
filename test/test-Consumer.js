@@ -178,7 +178,7 @@ const deviceCapabilities =
 			{
 				'level-asymmetry-allowed' : 1,
 				'packetization-mode'      : 1,
-				'profile-level-id'        : '42e01f'
+				'profile-level-id'        : '4d0032'
 			}
 		},
 		{

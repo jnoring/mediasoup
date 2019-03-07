@@ -229,7 +229,8 @@ test('assertCapabilities() succeeds', () =>
 			clockRate  : 90000,
 			parameters :
 			{
-				'packetization-mode' : 1
+				'packetization-mode' : 1,
+				'profile-level-id'   : '42e01f'
 			}
 		}
 	];
@@ -257,7 +258,8 @@ test('assertCapabilities() succeeds', () =>
 				parameters           :
 				{
 					foo                  : 1234,
-					'packetization-mode' : 1
+					'packetization-mode' : 1,
+					'profile-level-id'   : '42e01f'
 				}
 			}
 		]
@@ -291,7 +293,8 @@ test('assertCapabilities() with incompatible codecs throws UnsupportedError', ()
 			clockRate  : 90000,
 			parameters :
 			{
-				'packetization-mode' : 1
+				'packetization-mode' : 1,
+				'profile-level-id'   : '4d0032'
 			}
 		}
 	];
@@ -385,7 +388,8 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsum
 				parameters :
 				{
 					foo                  : 1234,
-					'packetization-mode' : 1
+					'packetization-mode' : 1,
+					'profile-level-id'   : '4d0032'
 				}
 			},
 			{
@@ -457,7 +461,8 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsum
 	expect(consumableRtpParameters.codecs[0].parameters).toEqual(
 		{
 			foo                  : 1234,
-			'packetization-mode' : 1
+			'packetization-mode' : 1,
+			'profile-level-id'   : '4d0032'
 		});
 
 	expect(consumableRtpParameters.codecs[1].name).toBe('rtx');
@@ -514,6 +519,7 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsum
 				parameters :
 				{
 					'packetization-mode' : 1,
+					'profile-level-id'   : '4d0032',
 					baz                  : 'LOLOLO'
 				}
 			},
@@ -588,7 +594,8 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsum
 			parameters :
 			{
 				foo                  : 1234,
-				'packetization-mode' : 1
+				'packetization-mode' : 1,
+				'profile-level-id'   : '4d0032'
 			}
 		});
 	expect(consumerRtpParameters.codecs[1]).toEqual(
@@ -646,7 +653,8 @@ test('getProducerRtpParametersMapping(), getConsumableRtpParameters(), getConsum
 			parameters :
 			{
 				foo                  : 1234,
-				'packetization-mode' : 1
+				'packetization-mode' : 1,
+				'profile-level-id'   : '4d0032'
 			}
 		});
 
@@ -687,7 +695,8 @@ test('getProducerRtpParametersMapping() with incompatible params throws Unsuppor
 			clockRate  : 90000,
 			parameters :
 			{
-				'packetization-mode' : 1
+				'packetization-mode' : 1,
+				'profile-level-id'   : '640032'
 			}
 		}
 	];

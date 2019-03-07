@@ -306,43 +306,6 @@ test('webRtcTransport.produce() with wrong arguments rejects with TypeError', as
 		.rejects
 		.toThrow(TypeError);
 
-	// Missing rtpParameters.rtcp.
-	await expect(webRtcTransport.produce(
-		{
-			kind          : 'audio',
-			rtpParameters :
-			{
-				codecs :
-				[
-					{
-						name        : 'H264',
-						mimeType    : 'video/h264',
-						payloadType : 112,
-						clockRate   : 90000,
-						parameters  :
-						{
-							'packetization-mode' : 1,
-							'profile-level-id'   : '4d0032'
-						}
-					},
-					{
-						name        : 'rtx',
-						mimeType    : 'video/rtx',
-						payloadType : 113,
-						clockRate   : 90000,
-						parameters  : { apt: 112 }
-					}
-				],
-				headerExtensions : [],
-				encodings        :
-				[
-					{ ssrc: 6666, rtx: { ssrc: 6667 } }
-				]
-			}
-		}))
-		.rejects
-		.toThrow(TypeError);
-
 	// Wrong apt in RTX codec.
 	await expect(webRtcTransport.produce(
 		{
@@ -387,7 +350,6 @@ test('webRtcTransport.produce() with wrong arguments rejects with TypeError', as
 
 test('webRtcTransport.produce() with unsupported codecs rejects with UnsupportedError', async () =>
 {
-	// Missing or empty rtpParameters.encodings.
 	await expect(webRtcTransport.produce(
 		{
 			kind          : 'audio',
@@ -405,6 +367,43 @@ test('webRtcTransport.produce() with unsupported codecs rejects with Unsupported
 				headerExtensions : [],
 				encodings        : [ { ssrc: 1111 } ],
 				rtcp             : { cname: 'audio' }
+			}
+		}))
+		.rejects
+		.toThrow(UnsupportedError);
+
+	// Invalid H264 profile-level-id.
+	await expect(webRtcTransport.produce(
+		{
+			kind          : 'video',
+			rtpParameters :
+			{
+				codecs :
+				[
+					{
+						name        : 'H264',
+						mimeType    : 'video/h264',
+						payloadType : 112,
+						clockRate   : 90000,
+						parameters  :
+						{
+							'packetization-mode' : 1,
+							'profile-level-id'   : 'CHICKEN'
+						}
+					},
+					{
+						name        : 'rtx',
+						mimeType    : 'video/rtx',
+						payloadType : 113,
+						clockRate   : 90000,
+						parameters  : { apt: 112 }
+					}
+				],
+				headerExtensions : [],
+				encodings        :
+				[
+					{ ssrc: 6666, rtx: { ssrc: 6667 } }
+				]
 			}
 		}))
 		.rejects
