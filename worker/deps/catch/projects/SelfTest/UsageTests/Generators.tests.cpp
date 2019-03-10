@@ -114,13 +114,19 @@ SCENARIO("Eating cucumbers", "[generators][approvals]") {
 #endif
 
 // There are also some generic generator manipulators
-TEST_CASE("Generators -- adapters", "[generators]") {
+TEST_CASE("Generators -- adapters", "[generators][generic]") {
     // TODO: This won't work yet, introduce GENERATE_VAR?
     //auto numbers = Catch::Generators::values({ 1, 2, 3, 4, 5, 6 });
     SECTION("Filtering by predicate") {
-        // This filters out all odd (false) numbers, giving [2, 4, 6]
-        auto i = GENERATE(filter([] (int val) { return val % 2 == 0; }, values({ 1, 2, 3, 4, 5, 6 })));
-        REQUIRE(i % 2 == 0);
+        SECTION("Basic usage") {
+            // This filters out all odd (false) numbers, giving [2, 4, 6]
+            auto i = GENERATE(filter([] (int val) { return val % 2 == 0; }, values({ 1, 2, 3, 4, 5, 6 })));
+            REQUIRE(i % 2 == 0);
+        }
+        SECTION("Throws if there are no matching values") {
+            using namespace Catch::Generators;
+            REQUIRE_THROWS_AS(filter([] (int) {return false; }, value(1)), Catch::GeneratorException);
+        }
     }
     SECTION("Shortening a range") {
         // This takes the first 3 elements from the values, giving back [1, 2, 3]
@@ -143,5 +149,37 @@ TEST_CASE("Generators -- adapters", "[generators]") {
         // This will return values [1, 2, 3, 1, 2, 3]
         auto j = GENERATE(repeat(2, values({ 1, 2, 3 })));
         REQUIRE(j > 0);
+    }
+    SECTION("Chunking a generator into sized pieces") {
+        SECTION("Number of elements in source is divisible by chunk size") {
+            auto chunk2 = GENERATE(chunk(2, values({ 1, 1, 2, 2, 3, 3 })));
+            REQUIRE(chunk2.size() == 2);
+            REQUIRE(chunk2.front() == chunk2.back());
+        }
+        SECTION("Number of elements in source is not divisible by chunk size") {
+            auto chunk2 = GENERATE(chunk(2, values({ 1, 1, 2, 2, 3 })));
+            REQUIRE(chunk2.size() == 2);
+            REQUIRE(chunk2.front() == chunk2.back());
+            REQUIRE(chunk2.front() < 3);
+        }
+        SECTION("Throws on too small generators") {
+            using namespace Catch::Generators;
+            REQUIRE_THROWS_AS(chunk(2, value(1)), Catch::GeneratorException);
+        }
+    }
+}
+
+// Note that because of the non-reproducibility of distributions,
+// anything involving the random generators cannot be part of approvals
+TEST_CASE("Random generator", "[generators][.][approvals]") {
+    SECTION("Infer int from integral arguments") {
+        auto val = GENERATE(take(4, random(0, 1)));
+        STATIC_REQUIRE(std::is_same<decltype(val), int>::value);
+        static_cast<void>(val); // Silence VS 2015 unused variable warning
+    }
+    SECTION("Infer double from double arguments") {
+        auto val = GENERATE(take(4, random(0., 1.)));
+        STATIC_REQUIRE(std::is_same<decltype(val), double>::value);
+        static_cast<void>(val); // Silence VS 2015 unused variable warning
     }
 }

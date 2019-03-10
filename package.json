@@ -52,7 +52,7 @@
     "eslint-plugin-jest": "^22.3.0",
     "gulp": "^4.0.0",
     "gulp-clang-format": "^1.0.27",
-    "jest": "^24.3.0",
+    "jest": "^24.3.1",
     "jest-tobetype": "^1.2.2",
     "opn-cli": "^4.0.0"
   },
