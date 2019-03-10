@@ -42,7 +42,7 @@
     "testRegex": "test/test.*\\.js"
   },
   "dependencies": {
-    "debug": "^4.1.0",
+    "debug": "^4.1.1",
     "netstring": "^0.3.0",
     "random-number": "0.0.9",
     "uuid": "^3.3.2"
