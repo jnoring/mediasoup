@@ -522,7 +522,7 @@ namespace RTC
 
 		if (it == this->mapSsrcRtpStream.end())
 		{
-			MS_WARN_TAG(rtcp, "stream not found");
+			MS_WARN_TAG(rtcp, "RtpStream not found [ssrc:%" PRIu32 "]", report->GetSsrc());
 
 			return;
 		}
@@ -626,7 +626,7 @@ namespace RTC
 				// Ignore if no stream has been created yet for the corresponding encoding.
 				if (it == this->mapSsrcRtpStream.end())
 				{
-					MS_DEBUG_2TAGS(rtp, rtx, "ignoring RTX packet for not yet created stream (ssrc lookup)");
+					MS_DEBUG_2TAGS(rtp, rtx, "ignoring RTX packet for not yet created RtpStream (ssrc lookup)");
 
 					return nullptr;
 				}
@@ -715,7 +715,7 @@ namespace RTC
 						}
 					}
 
-					MS_DEBUG_2TAGS(rtp, rtx, "ignoring RTX packet for not yet created stream (RID lookup)");
+					MS_DEBUG_2TAGS(rtp, rtx, "ignoring RTX packet for not yet created RtpStream (RID lookup)");
 
 					return nullptr;
 				}
@@ -735,7 +735,7 @@ namespace RTC
 		MS_TRACE();
 
 		MS_ASSERT(
-		  this->mapSsrcRtpStream.find(ssrc) == this->mapSsrcRtpStream.end(), "stream already exists");
+		  this->mapSsrcRtpStream.find(ssrc) == this->mapSsrcRtpStream.end(), "RtpStream already exists");
 
 		auto& encoding        = this->rtpParameters.encodings[encodingIdx];
 		auto& encodingMapping = this->rtpMapping.encodings[encodingIdx];
@@ -911,7 +911,7 @@ namespace RTC
 
 		if (it == this->mapSsrcRtpStream.end())
 		{
-			MS_WARN_2TAGS(rtcp, rtx, "no associated stream found [ssrc:%" PRIu32 "]", ssrc);
+			MS_WARN_2TAGS(rtcp, rtx, "no associated RtpStream found [ssrc:%" PRIu32 "]", ssrc);
 
 			return;
 		}
