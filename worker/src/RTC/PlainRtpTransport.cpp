@@ -187,6 +187,7 @@ namespace RTC
 			// Add tuple.
 			this->tuple->FillJson(jsonObject["tuple"]);
 		}
+		else
 		{
 			// Add bytesReceived.
 			jsonObject["bytesReceived"] = 0;
