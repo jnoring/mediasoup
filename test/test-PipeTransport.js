@@ -202,10 +202,16 @@ test('router.pipeToRouter() succeeds with audio', async () =>
 
 	dump = await router1.dump();
 
+	// There shoud should be two Transports in router1:
+	// - WebRtcTransport for audioProducer and videoProducer.
+	// - PipeTransport between router1 and router2.
 	expect(dump.transportIds.length).toBe(2);
 
 	dump = await router2.dump();
 
+	// There shoud should be two Transports in router2:
+	// - WebRtcTransport for audioConsumer and videoConsumer.
+	// - pipeTransport between router2 and router1.
 	expect(dump.transportIds.length).toBe(2);
 
 	expect(pipeConsumer.id).toBeType('string');
@@ -293,10 +299,12 @@ test('router.pipeToRouter() succeeds with video', async () =>
 
 	dump = await router1.dump();
 
+	// No new PipeTransport should has been created. The existing one is used.
 	expect(dump.transportIds.length).toBe(2);
 
 	dump = await router2.dump();
 
+	// No new PipeTransport should has been created. The existing one is used.
 	expect(dump.transportIds.length).toBe(2);
 
 	expect(pipeConsumer.id).toBeType('string');
