@@ -56,8 +56,6 @@ namespace RTC
 		// Others.
 		bool keyFrameSupported{ false };
 		bool syncRequired{ true };
-		uint64_t lastRtcpSentTime{ 0 };
-		uint16_t maxRtcpInterval{ 0 };
 		RTC::SeqManager<uint16_t> rtpSeqManager;
 		RTC::SeqManager<uint32_t> rtpTimestampManager;
 		std::unique_ptr<RTC::Codecs::EncodingContext> encodingContext;

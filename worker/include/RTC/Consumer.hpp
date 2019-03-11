@@ -79,6 +79,8 @@ namespace RTC
 		std::vector<RTC::RtpEncodingParameters> consumableRtpEncodings;
 		// Others.
 		std::unordered_set<uint8_t> supportedCodecPayloadTypes;
+		uint64_t lastRtcpSentTime{ 0 };
+		uint16_t maxRtcpInterval{ 0 };
 
 	private:
 		// Others.

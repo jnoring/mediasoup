@@ -2,10 +2,11 @@
 #define MS_RTC_PIPE_CONSUMER_HPP
 
 #include "RTC/Consumer.hpp"
+#include "RTC/RtpStreamSend.hpp"
 
 namespace RTC
 {
-	class PipeConsumer : public RTC::Consumer
+	class PipeConsumer : public RTC::Consumer, public RTC::RtpStreamSend::Listener
 	{
 	public:
 		PipeConsumer(const std::string& id, RTC::Consumer::Listener* listener, json& data);
@@ -31,10 +32,17 @@ namespace RTC
 	private:
 		void Paused(bool wasProducer) override;
 		void Resumed(bool wasProducer) override;
+		void CreateRtpStreams();
 		void RequestKeyFrame();
 
+		/* Pure virtual methods inherited from RtpStreamSend::Listener. */
+	public:
+		void OnRtpStreamScore(RTC::RtpStream* rtpStream, uint8_t score) override;
+		void OnRtpStreamRetransmitRtpPacket(RTC::RtpStreamSend* rtpStream, RTC::RtpPacket* packet) override;
+
 	private:
-		uint8_t fractionLost{ 0 };
+		// Allocated by this.
+		std::unordered_map<uint32_t, RTC::RtpStreamSend*> mapMappedSsrcRtpStream;
 	};
 } // namespace RTC
 

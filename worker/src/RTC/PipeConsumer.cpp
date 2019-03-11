@@ -13,6 +13,13 @@ namespace RTC
 	  : RTC::Consumer::Consumer(id, listener, data, RTC::RtpParameters::Type::PIPE)
 	{
 		MS_TRACE();
+
+		// Ensure there are as many encodings as consumable encodings.
+		if (this->rtpParameters.encodings.size() != this->consumableRtpEncodings.size())
+			MS_THROW_TYPE_ERROR("number of rtpParameters.encodings and consumableRtpEncodings do not match");
+
+		// Create RtpStreamSend instances.
+		CreateRtpStreams();
 	}
 
 	PipeConsumer::~PipeConsumer()
@@ -97,11 +104,30 @@ namespace RTC
 		this->listener->OnConsumerSendRtpPacket(this, packet);
 	}
 
-	void PipeConsumer::GetRtcp(RTC::RTCP::CompoundPacket* /*packet*/, uint64_t /*now*/)
+	void PipeConsumer::GetRtcp(RTC::RTCP::CompoundPacket* packet, uint64_t now)
 	{
 		MS_TRACE();
 
-		// Do nothing.
+		if (static_cast<float>((now - this->lastRtcpSentTime) * 1.15) < this->maxRtcpInterval)
+			return;
+
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto& rtpStream = kv.second;
+			auto* report    = rtpStream->GetRtcpSenderReport(now);
+
+			if (!report)
+				continue;
+
+			packet->AddSenderReport(report);
+
+			// Build SDES chunk for this sender.
+			auto* sdesChunk = rtpStream->GetRtcpSdesChunk();
+
+			packet->AddSdesChunk(sdesChunk);
+
+			this->lastRtcpSentTime = now;
+		}
 	}
 
 	void PipeConsumer::NeedWorstRemoteFractionLost(uint32_t /*mappedSsrc*/, uint8_t& worstRemoteFractionLost)
@@ -111,9 +137,15 @@ namespace RTC
 		if (!IsActive())
 			return;
 
-		// If our fraction lost is worse than the given one, update it.
-		if (this->fractionLost > worstRemoteFractionLost)
-			worstRemoteFractionLost = this->fractionLost;
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto& rtpStream   = kv.second;
+			auto fractionLost = rtpStream->GetFractionLost();
+
+			// If our fraction lost is worse than the given one, update it.
+			if (fractionLost > worstRemoteFractionLost)
+				worstRemoteFractionLost = fractionLost;
+		}
 	}
 
 	void PipeConsumer::ReceiveNack(RTC::RTCP::FeedbackRtpNackPacket* /*nackPacket*/)
@@ -121,6 +153,8 @@ namespace RTC
 		MS_TRACE();
 
 		// Do nothing.
+
+		// TODO: Not sure yet.
 	}
 
 	void PipeConsumer::ReceiveKeyFrameRequest(RTC::RTCP::FeedbackPs::MessageType messageType)
@@ -137,7 +171,14 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		this->fractionLost = report->GetFractionLost();
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto ssrc       = kv.first;
+			auto& rtpStream = kv.second;
+
+			if (report->GetSsrc() == ssrc)
+				rtpStream->ReceiveRtcpReceiverReport(report);
+		}
 	}
 
 	uint32_t PipeConsumer::GetTransmissionRate(uint64_t now)
@@ -146,6 +187,8 @@ namespace RTC
 
 		// Do nothing.
 		return 0u;
+
+		// TODO: No idea yet.
 	}
 
 	float PipeConsumer::GetLossPercentage() const
@@ -154,23 +197,102 @@ namespace RTC
 
 		// Do nothing.
 		return 0u;
+
+		// TODO: No idea yet.
 	}
 
 	void PipeConsumer::Paused(bool /*wasProducer*/)
 	{
 		MS_TRACE();
 
-		// Do nothing.
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto& rtpStream = kv.second;
+
+			rtpStream->Pause();
+		}
 	}
 
 	void PipeConsumer::Resumed(bool wasProducer)
 	{
 		MS_TRACE();
 
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto& rtpStream = kv.second;
+
+			rtpStream->Resume();
+		}
+
 		// If we have been resumed due to the Producer becoming resumed, we don't
 		// need to request a key frame since the Producer already requested it.
 		if (!wasProducer)
 			RequestKeyFrame();
+	}
+
+	void PipeConsumer::CreateRtpStreams()
+	{
+		MS_TRACE();
+
+		// NOTE: Here we know that SSRCs in Consumer's rtpParameters must be the same
+		// as in the given consumableRtpEncodings.
+		for (auto& encoding : this->rtpParameters.encodings)
+		{
+			auto* mediaCodec = this->rtpParameters.GetCodecForEncoding(encoding);
+
+			// Set stream params.
+			RTC::RtpStream::Params params;
+
+			params.ssrc        = encoding.ssrc;
+			params.payloadType = mediaCodec->payloadType;
+			params.mimeType    = mediaCodec->mimeType;
+			params.clockRate   = mediaCodec->clockRate;
+			params.cname       = this->rtpParameters.rtcp.cname;
+
+			if (mediaCodec->parameters.HasInteger("useinbandfec") && mediaCodec->parameters.GetInteger("useinbandfec") == 1)
+			{
+				MS_DEBUG_TAG(rtcp, "in band FEC supported");
+
+				params.useInBandFec = true;
+			}
+
+			for (auto& fb : mediaCodec->rtcpFeedback)
+			{
+				if (!params.useNack && fb.type == "nack" && fb.parameter == "")
+				{
+					MS_DEBUG_2TAGS(rtcp, rtx, "NACK supported");
+
+					params.useNack = true;
+				}
+				else if (!params.usePli && fb.type == "nack" && fb.parameter == "pli")
+				{
+					MS_DEBUG_TAG(rtcp, "PLI supported");
+
+					params.usePli = true;
+				}
+				else if (!params.useFir && fb.type == "ccm" && fb.parameter == "fir")
+				{
+					MS_DEBUG_TAG(rtcp, "FIR supported");
+
+					params.useFir = true;
+				}
+			}
+
+			// Create a RtpStreamSend for sending a single media stream.
+			size_t bufferSize = params.useNack ? 1500 : 0;
+			auto* rtpStream   = new RTC::RtpStreamSend(this, params, bufferSize);
+
+			// If the Consumer is paused, tell the RtpStreamSend.
+			if (IsPaused() || IsProducerPaused())
+				rtpStream->Pause();
+
+			auto* rtxCodec = this->rtpParameters.GetRtxCodecForEncoding(encoding);
+
+			if (rtxCodec && encoding.hasRtx)
+				rtpStream->SetRtx(rtxCodec->payloadType, encoding.rtx.ssrc);
+
+			this->mapMappedSsrcRtpStream[encoding.ssrc] = rtpStream;
+		}
 	}
 
 	void PipeConsumer::RequestKeyFrame()
@@ -180,11 +302,26 @@ namespace RTC
 		if (!IsActive() || this->kind != RTC::Media::Kind::VIDEO)
 			return;
 
-		for (auto& encoding : this->consumableRtpEncodings)
+		for (auto& encoding : this->rtpParameters.encodings)
 		{
 			auto mappedSsrc = encoding.ssrc;
 
 			this->listener->OnConsumerKeyFrameRequested(this, mappedSsrc);
 		}
+	}
+
+	inline void PipeConsumer::OnRtpStreamScore(RTC::RtpStream* /*rtpStream*/, uint8_t /*score*/)
+	{
+		MS_TRACE();
+
+		// TODO: Not sure if we must do something here.
+	}
+
+	inline void PipeConsumer::OnRtpStreamRetransmitRtpPacket(
+	  RTC::RtpStreamSend* /*rtpStream*/, RTC::RtpPacket* packet)
+	{
+		MS_TRACE();
+
+		this->listener->OnConsumerSendRtpPacket(this, packet);
 	}
 } // namespace RTC
