@@ -149,7 +149,7 @@ const videoProducerParameters =
 	appData : { foo: 1, bar: '2' }
 };
 
-const deviceCapabilities =
+const consumerDeviceCapabilities =
 {
 	codecs :
 	[
@@ -166,7 +166,7 @@ const deviceCapabilities =
 			mimeType             : 'video/H264',
 			kind                 : 'video',
 			clockRate            : 90000,
-			preferredPayloadType : 103,
+			preferredPayloadType : 101,
 			rtcpFeedback         :
 			[
 				{ type: 'nack' },
@@ -276,13 +276,16 @@ test('transport.consume() succeeds', async () =>
 	transport2.once('observer:newconsumer', onObserverNewConsumer1);
 
 	expect(router.canConsume(
-		{ producerId: audioProducer.id, rtpCapabilities: deviceCapabilities }))
+		{
+			producerId      : audioProducer.id,
+			rtpCapabilities : consumerDeviceCapabilities
+		}))
 		.toBe(true);
 
 	audioConsumer = await transport2.consume(
 		{
 			producerId      : audioProducer.id,
-			rtpCapabilities : deviceCapabilities,
+			rtpCapabilities : consumerDeviceCapabilities,
 			appData         : { baz: 'LOL' }
 		});
 
@@ -339,13 +342,16 @@ test('transport.consume() succeeds', async () =>
 	transport2.once('observer:newconsumer', onObserverNewConsumer2);
 
 	expect(router.canConsume(
-		{ producerId: videoProducer.id, rtpCapabilities: deviceCapabilities }))
+		{
+			producerId      : videoProducer.id,
+			rtpCapabilities : consumerDeviceCapabilities
+		}))
 		.toBe(true);
 
 	videoConsumer = await transport2.consume(
 		{
 			producerId      : videoProducer.id,
-			rtpCapabilities : deviceCapabilities,
+			rtpCapabilities : consumerDeviceCapabilities,
 			paused          : true,
 			appData         : { baz: 'LOL' }
 		});
@@ -750,7 +756,7 @@ test('Consumer emits "producerclose" if Producer is closed', async () =>
 	audioConsumer = await transport2.consume(
 		{
 			producerId      : audioProducer.id,
-			rtpCapabilities : deviceCapabilities
+			rtpCapabilities : consumerDeviceCapabilities
 		});
 
 	const onObserverClose = jest.fn();
@@ -772,7 +778,7 @@ test('Consumer emits "transportclose" if Transport is closed', async () =>
 	videoConsumer = await transport2.consume(
 		{
 			producerId      : videoProducer.id,
-			rtpCapabilities : deviceCapabilities
+			rtpCapabilities : consumerDeviceCapabilities
 		});
 
 	const onObserverClose = jest.fn();

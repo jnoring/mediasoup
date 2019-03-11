@@ -134,6 +134,11 @@ namespace RTC
 			encodingMapping.mappedSsrc = jsonMappedSsrcIt->get<uint32_t>();
 		}
 
+		auto jsonPausedIt = data.find("paused");
+
+		if (jsonPausedIt != data.end() && jsonPausedIt->is_boolean())
+			this->paused = jsonPausedIt->get<bool>();
+
 		// The number of encodings in rtpParameters must match the number of encodings
 		// in rtpMapping.
 		if (this->rtpParameters.encodings.size() != this->rtpMapping.encodings.size())
