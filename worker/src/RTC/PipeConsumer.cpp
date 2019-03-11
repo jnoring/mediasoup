@@ -100,8 +100,22 @@ namespace RTC
 		if (!IsActive())
 			return;
 
-		// Send the packet.
-		this->listener->OnConsumerSendRtpPacket(this, packet);
+		auto* rtpStream = this->mapMappedSsrcRtpStream.at(packet->GetSsrc());
+
+		// Process the packet.
+		if (rtpStream->ReceivePacket(packet))
+		{
+			// Send the packet.
+			this->listener->OnConsumerSendRtpPacket(this, packet);
+		}
+		else
+		{
+			MS_WARN_TAG(
+			  rtp,
+			  "failed to send packet [ssrc:%" PRIu32 ", seq:%" PRIu16 "]",
+			  packet->GetSsrc(),
+			  packet->GetSequenceNumber());
+		}
 	}
 
 	void PipeConsumer::GetRtcp(RTC::RTCP::CompoundPacket* packet, uint64_t now)
@@ -262,13 +276,7 @@ namespace RTC
 
 			for (auto& fb : mediaCodec->rtcpFeedback)
 			{
-				if (!params.useNack && fb.type == "nack" && fb.parameter == "")
-				{
-					MS_DEBUG_2TAGS(rtcp, rtx, "NACK supported");
-
-					params.useNack = true;
-				}
-				else if (!params.usePli && fb.type == "nack" && fb.parameter == "pli")
+				if (!params.usePli && fb.type == "nack" && fb.parameter == "pli")
 				{
 					MS_DEBUG_TAG(rtcp, "PLI supported");
 
