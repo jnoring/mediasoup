@@ -185,10 +185,16 @@ namespace RTC
 	{
 		MS_TRACE();
 
-		// Do nothing.
-		return 0u;
+		uint32_t rate{ 0 };
 
-		// TODO: No idea yet.
+		for (auto& kv : this->mapMappedSsrcRtpStream)
+		{
+			auto& rtpStream = kv.second;
+
+			rate += rtpStream->GetRate(now);
+		}
+
+		return rate / this->mapMappedSsrcRtpStream.size();
 	}
 
 	float PipeConsumer::GetLossPercentage() const
@@ -197,8 +203,6 @@ namespace RTC
 
 		// Do nothing.
 		return 0u;
-
-		// TODO: No idea yet.
 	}
 
 	void PipeConsumer::Paused(bool /*wasProducer*/)
