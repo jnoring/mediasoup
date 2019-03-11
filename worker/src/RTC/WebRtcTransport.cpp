@@ -765,64 +765,6 @@ namespace RTC
 		this->iceSelectedTuple->Send(data, len);
 	}
 
-	void WebRtcTransport::SendRtcp(uint64_t now)
-	{
-		MS_TRACE();
-
-		// - Create a CompoundPacket.
-		// - Request every Consumer and Producer their RTCP data.
-		// - Send the CompoundPacket.
-
-		std::unique_ptr<RTC::RTCP::CompoundPacket> packet(new RTC::RTCP::CompoundPacket());
-
-		for (auto& kv : this->mapConsumers)
-		{
-			auto* consumer = kv.second;
-
-			consumer->GetRtcp(packet.get(), now);
-
-			// Send the RTCP compound packet if there is a sender report.
-			if (packet->HasSenderReport())
-			{
-				// Ensure that the RTCP packet fits into the RTCP buffer.
-				if (packet->GetSize() > RTC::RTCP::BufferSize)
-				{
-					MS_WARN_TAG(rtcp, "cannot send RTCP packet, size too big (%zu bytes)", packet->GetSize());
-
-					return;
-				}
-
-				packet->Serialize(RTC::RTCP::Buffer);
-				SendRtcpCompoundPacket(packet.get());
-
-				// Reset the Compound packet.
-				packet.reset(new RTC::RTCP::CompoundPacket());
-			}
-		}
-
-		for (auto& kv : this->mapProducers)
-		{
-			auto* producer = kv.second;
-
-			producer->GetRtcp(packet.get(), now);
-		}
-
-		// Send the RTCP compound with all receiver reports.
-		if (packet->GetReceiverReportCount() != 0u)
-		{
-			// Ensure that the RTCP packet fits into the RTCP buffer.
-			if (packet->GetSize() > RTC::RTCP::BufferSize)
-			{
-				MS_WARN_TAG(rtcp, "cannot send RTCP packet, size too big (%zu bytes)", packet->GetSize());
-
-				return;
-			}
-
-			packet->Serialize(RTC::RTCP::Buffer);
-			SendRtcpCompoundPacket(packet.get());
-		}
-	}
-
 	void WebRtcTransport::SendRtcpPacket(RTC::RTCP::Packet* packet)
 	{
 		MS_TRACE();

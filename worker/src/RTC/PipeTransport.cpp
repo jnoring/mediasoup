@@ -264,39 +264,6 @@ namespace RTC
 		this->tuple->Send(data, len);
 	}
 
-	void PipeTransport::SendRtcp(uint64_t now)
-	{
-		MS_TRACE();
-
-		// - Create a CompoundPacket.
-		// - Request every Producer their RTCP data.
-		// - Send the CompoundPacket.
-
-		std::unique_ptr<RTC::RTCP::CompoundPacket> packet(new RTC::RTCP::CompoundPacket());
-
-		for (auto& kv : this->mapProducers)
-		{
-			auto* producer = kv.second;
-
-			producer->GetRtcp(packet.get(), now);
-		}
-
-		// Send the RTCP compound with all receiver reports.
-		if (packet->GetReceiverReportCount() != 0u)
-		{
-			// Ensure that the RTCP packet fits into the RTCP buffer.
-			if (packet->GetSize() > RTC::RTCP::BufferSize)
-			{
-				MS_WARN_TAG(rtcp, "cannot send RTCP packet, size too big (%zu bytes)", packet->GetSize());
-
-				return;
-			}
-
-			packet->Serialize(RTC::RTCP::Buffer);
-			SendRtcpCompoundPacket(packet.get());
-		}
-	}
-
 	void PipeTransport::SendRtcpPacket(RTC::RTCP::Packet* packet)
 	{
 		MS_TRACE();

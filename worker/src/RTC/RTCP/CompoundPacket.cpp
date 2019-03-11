@@ -109,7 +109,7 @@ namespace RTC
 
 		void CompoundPacket::AddSenderReport(SenderReport* report)
 		{
-			MS_ASSERT(!HasSenderReport(), "a sender report is already present");
+			MS_ASSERT(!HasSenderReport(), "a Sender Report is already present");
 
 			this->senderReportPacket.AddReport(report);
 		}
