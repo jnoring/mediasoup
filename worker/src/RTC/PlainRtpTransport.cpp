@@ -470,6 +470,7 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		// If RTP tuple is unset, set it if we are in comedia mode.
 		if (!this->tuple)
 		{
 			if (!this->comedia)
@@ -485,6 +486,14 @@ namespace RTC
 
 			if (!this->listenIp.announcedIp.empty())
 				this->tuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
+		}
+
+		// Verify that the packet's tuple matches our RTP tuple.
+		if (!this->tuple->Compare(tuple))
+		{
+			MS_DEBUG_TAG(rtp, "ignoring RTP packet from unknown IP:port");
+
+			return;
 		}
 
 		RTC::RtpPacket* packet = RTC::RtpPacket::Parse(data, len);
@@ -534,6 +543,7 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		// If RTCP-mux and RTP tuple is unset, set it if we are in comedia mode.
 		if (this->rtcpMux && !this->tuple)
 		{
 			if (!this->comedia)
@@ -550,6 +560,7 @@ namespace RTC
 			if (!this->listenIp.announcedIp.empty())
 				this->tuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
 		}
+		// If no RTCP-mux and RTCP tuple is unset, set it if we are in comedia mode.
 		else if (!this->rtcpMux && !this->rtcpTuple)
 		{
 			if (!this->comedia)
@@ -565,6 +576,21 @@ namespace RTC
 
 			if (!this->listenIp.announcedIp.empty())
 				this->rtcpTuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
+		}
+
+		// If RTCP-mux verify that the packet's tuple matches our RTP tuple.
+		if (this->rtcpMux && !this->tuple->Compare(tuple))
+		{
+			MS_DEBUG_TAG(rtcp, "ignoring RTCP packet from unknown IP:port");
+
+			return;
+		}
+		// If no RTCP-mux verify that the packet's tuple matches our RTCP tuple.
+		else if (!this->rtcpMux && !this->rtcpTuple->Compare(tuple))
+		{
+			MS_DEBUG_TAG(rtcp, "ignoring RTCP packet from unknown IP:port");
+
+			return;
 		}
 
 		RTC::RTCP::Packet* packet = RTC::RTCP::Packet::Parse(data, len);

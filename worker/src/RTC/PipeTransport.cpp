@@ -311,12 +311,20 @@ namespace RTC
 		}
 	}
 
-	inline void PipeTransport::OnRtpDataRecv(RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
+	inline void PipeTransport::OnRtpDataRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
 
 		if (!IsConnected())
 			return;
+
+		// Verify that the packet's tuple matches our tuple.
+		if (!this->tuple->Compare(tuple))
+		{
+			MS_DEBUG_TAG(rtp, "ignoring RTP packet from unknown IP:port");
+
+			return;
+		}
 
 		RTC::RtpPacket* packet = RTC::RtpPacket::Parse(data, len);
 
@@ -355,13 +363,20 @@ namespace RTC
 		delete packet;
 	}
 
-	inline void PipeTransport::OnRtcpDataRecv(
-	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
+	inline void PipeTransport::OnRtcpDataRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
 
 		if (!IsConnected())
 			return;
+
+		// Verify that the packet's tuple matches our tuple.
+		if (!this->tuple->Compare(tuple))
+		{
+			MS_DEBUG_TAG(rtcp, "ignoring RTCP packet from unknown IP:port");
+
+			return;
+		}
 
 		RTC::RTCP::Packet* packet = RTC::RTCP::Packet::Parse(data, len);
 
