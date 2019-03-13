@@ -24,6 +24,7 @@ namespace RTC
 	public:
 		TransportTuple(RTC::UdpSocket* udpSocket, const struct sockaddr* udpRemoteAddr);
 		explicit TransportTuple(RTC::TcpConnection* tcpConnection);
+		explicit TransportTuple(const TransportTuple* tuple);
 
 		void FillJson(json& jsonObject) const;
 		void StoreUdpRemoteAddress();
@@ -59,11 +60,20 @@ namespace RTC
 	{
 	}
 
+	inline TransportTuple::TransportTuple(const TransportTuple* tuple)
+	  : udpSocket(tuple->udpSocket), udpRemoteAddr(tuple->udpRemoteAddr),
+	    tcpConnection(tuple->tcpConnection), localAnnouncedIp(tuple->localAnnouncedIp),
+	    protocol(tuple->protocol)
+	{
+		if (protocol == TransportTuple::Protocol::UDP)
+			StoreUdpRemoteAddress();
+	}
+
 	inline void TransportTuple::StoreUdpRemoteAddress()
 	{
 		// Clone the given address into our address storage and make the sockaddr
 		// pointer point to it.
-		this->udpRemoteAddrStorage = Utils::IP::CopyAddress(udpRemoteAddr);
+		this->udpRemoteAddrStorage = Utils::IP::CopyAddress(this->udpRemoteAddr);
 		this->udpRemoteAddr        = (struct sockaddr*)&this->udpRemoteAddrStorage;
 	}
 

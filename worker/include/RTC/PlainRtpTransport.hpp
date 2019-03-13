@@ -48,6 +48,7 @@ namespace RTC
 		// Others.
 		ListenIp listenIp;
 		bool rtcpMux{ true };
+		bool comedia{ false };
 		struct sockaddr_storage remoteAddrStorage;
 		struct sockaddr_storage rtcpRemoteAddrStorage;
 	};

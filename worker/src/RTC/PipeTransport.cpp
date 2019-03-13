@@ -315,6 +315,9 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		if (!IsConnected())
+			return;
+
 		RTC::RtpPacket* packet = RTC::RtpPacket::Parse(data, len);
 
 		if (packet == nullptr)
@@ -356,6 +359,9 @@ namespace RTC
 	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
+
+		if (!IsConnected())
+			return;
 
 		RTC::RTCP::Packet* packet = RTC::RTCP::Packet::Parse(data, len);
 

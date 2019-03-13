@@ -57,6 +57,16 @@ namespace RTC
 			this->rtcpMux = jsonRtcpMuxIt->get<bool>();
 		}
 
+		auto jsonComediaIt = data.find("comedia");
+
+		if (jsonComediaIt != data.end())
+		{
+			if (!jsonComediaIt->is_boolean())
+				MS_THROW_TYPE_ERROR("wrong comedia (not a boolean)");
+
+			this->comedia = jsonComediaIt->get<bool>();
+		}
+
 		try
 		{
 			// This may throw.
@@ -145,6 +155,9 @@ namespace RTC
 			}
 		}
 
+		// Add comedia.
+		jsonObject["comedia"] = this->comedia;
+
 		// Add headerExtensionIds.
 		jsonObject["rtpHeaderExtensions"] = json::object();
 		auto jsonRtpHeaderExtensionsIt    = jsonObject.find("rtpHeaderExtensions");
@@ -208,6 +221,10 @@ namespace RTC
 		{
 			case Channel::Request::MethodId::TRANSPORT_CONNECT:
 			{
+				// DonReject if comedia mode is set.
+				if (this->comedia)
+					MS_THROW_ERROR("cannot call connect() when comedia mode is set");
+
 				// Ensure this method is not called twice.
 				if (this->tuple != nullptr)
 					MS_THROW_ERROR("connect() already called");
@@ -409,7 +426,7 @@ namespace RTC
 
 		if (this->rtcpMux)
 			this->tuple->Send(data, len);
-		else
+		else if (this->rtcpTuple)
 			this->rtcpTuple->Send(data, len);
 	}
 
@@ -425,7 +442,7 @@ namespace RTC
 
 		if (this->rtcpMux)
 			this->tuple->Send(data, len);
-		else
+		else if (this->rtcpTuple)
 			this->rtcpTuple->Send(data, len);
 	}
 
@@ -449,10 +466,26 @@ namespace RTC
 		}
 	}
 
-	inline void PlainRtpTransport::OnRtpDataRecv(
-	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
+	inline void PlainRtpTransport::OnRtpDataRecv(RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
+
+		if (!this->tuple)
+		{
+			if (!this->comedia)
+			{
+				MS_DEBUG_TAG(rtp, "ignoring RTP packet while not connected");
+
+				return;
+			}
+
+			MS_DEBUG_TAG(rtp, "setting RTP tuple (comedia mode enabled)");
+
+			this->tuple = new RTC::TransportTuple(tuple);
+
+			if (!this->listenIp.announcedIp.empty())
+				this->tuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
+		}
 
 		RTC::RtpPacket* packet = RTC::RtpPacket::Parse(data, len);
 
@@ -497,9 +530,42 @@ namespace RTC
 	}
 
 	inline void PlainRtpTransport::OnRtcpDataRecv(
-	  RTC::TransportTuple* /*tuple*/, const uint8_t* data, size_t len)
+	  RTC::TransportTuple* tuple, const uint8_t* data, size_t len)
 	{
 		MS_TRACE();
+
+		if (this->rtcpMux && !this->tuple)
+		{
+			if (!this->comedia)
+			{
+				MS_DEBUG_TAG(rtcp, "ignoring RTCP packet while not connected");
+
+				return;
+			}
+
+			MS_DEBUG_TAG(rtp, "setting RTP tuple (comedia mode enabled)");
+
+			this->tuple = new RTC::TransportTuple(tuple);
+
+			if (!this->listenIp.announcedIp.empty())
+				this->tuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
+		}
+		else if (!this->rtcpMux && !this->rtcpTuple)
+		{
+			if (!this->comedia)
+			{
+				MS_DEBUG_TAG(rtcp, "ignoring RTCP packet while not connected");
+
+				return;
+			}
+
+			MS_DEBUG_TAG(rtcp, "setting RTCP tuple (comedia mode enabled)");
+
+			this->rtcpTuple = new RTC::TransportTuple(tuple);
+
+			if (!this->listenIp.announcedIp.empty())
+				this->rtcpTuple->SetLocalAnnouncedIp(this->listenIp.announcedIp);
+		}
 
 		RTC::RTCP::Packet* packet = RTC::RTCP::Packet::Parse(data, len);
 
