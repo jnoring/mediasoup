@@ -442,14 +442,16 @@ test('producer.pause() and producer.resume() are transmitted to pipe Consumer', 
 
 	await videoProducer.resume();
 
-	await new Promise((resolve) => videoConsumer.once('producerresume', resolve));
+	if (videoConsumer.producerPaused)
+		await new Promise((resolve) => videoConsumer.once('producerresume', resolve));
 
 	expect(videoConsumer.producerPaused).toBe(false);
 	expect(videoConsumer.paused).toBe(false);
 
 	await videoProducer.pause();
 
-	await new Promise((resolve) => videoConsumer.once('producerpause', resolve));
+	if (!videoConsumer.producerPaused)
+		await new Promise((resolve) => videoConsumer.once('producerpause', resolve));
 
 	expect(videoConsumer.producerPaused).toBe(true);
 	expect(videoConsumer.paused).toBe(false);
@@ -461,7 +463,8 @@ test('producer.close() is transmitted to pipe Consumer', async () =>
 
 	expect(videoProducer.closed).toBe(true);
 
-	await new Promise((resolve) => videoConsumer.once('producerclose', resolve));
+	if (!videoConsumer.closed)
+		await new Promise((resolve) => videoConsumer.once('producerclose', resolve));
 
 	expect(videoConsumer.closed).toBe(true);
 }, 2000);
