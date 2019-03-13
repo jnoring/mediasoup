@@ -443,9 +443,11 @@ namespace RTC
 		MS_ASSERT(
 		  this->mapProducerConsumers.find(producer) == this->mapProducerConsumers.end(),
 		  "Producer already present in mapProducerConsumers");
-		MS_ASSERT(
-		  this->mapProducers.find(producer->id) == this->mapProducers.end(),
-		  "Producer already present in mapProducers");
+
+		if (this->mapProducers.find(producer->id) != this->mapProducers.end())
+		{
+			MS_THROW_ERROR("Producer already present in mapProducers [producerId:%s]", producer->id.c_str());
+		}
 
 		// Insert the Producer in the maps.
 		this->mapProducers[producer->id] = producer;

@@ -188,6 +188,24 @@ namespace RTC
 					throw;
 				}
 
+				// Notify the listener.
+				// This may throw if a Producer with same id already exists.
+				try
+				{
+					this->listener->OnTransportNewProducer(this, producer);
+				}
+				catch (const MediaSoupError& error)
+				{
+					delete producer;
+
+					throw;
+				}
+
+				// Insert into the map.
+				this->mapProducers[producerId] = producer;
+
+				MS_DEBUG_DEV("Producer created [producerId:%s]", producerId.c_str());
+
 				// Take the transport related RTP header extensions of the Producer and
 				// add them to the Transport.
 				// NOTE: Producer::GetRtpHeaderExtensionIds() returns the original
@@ -202,14 +220,6 @@ namespace RTC
 
 				if (producerRtpHeaderExtensionIds.rid != 0u)
 					this->rtpHeaderExtensionIds.rid = producerRtpHeaderExtensionIds.rid;
-
-				// Insert into the map.
-				this->mapProducers[producerId] = producer;
-
-				// Notify the listener.
-				this->listener->OnTransportNewProducer(this, producer);
-
-				MS_DEBUG_DEV("Producer created [producerId:%s]", producerId.c_str());
 
 				// Create status response.
 				json data(json::object());
@@ -286,7 +296,7 @@ namespace RTC
 					}
 				}
 
-				// Notify the listener and get the associated Producer.
+				// Notify the listener.
 				// This may throw if no Producer is found.
 				try
 				{
